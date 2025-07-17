@@ -2,75 +2,109 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Custom Quill editor styles */
-.ql-toolbar {
-  @apply border-gray-200 bg-gray-50 rounded-t-lg;
+/* Resume Container */
+.resume-container {
+  @apply bg-white shadow-lg rounded-lg overflow-hidden;
+  width: 8.5in;
+  min-height: 11in;
+  padding: 0.75in;
+  margin: 0 auto;
+  font-family: 'Times New Roman', serif;
+  font-size: 11pt;
+  line-height: 1.2;
+  color: #000;
 }
 
-.ql-container {
-  @apply border-gray-200 rounded-b-lg;
+/* Resume Header - Name and Contact */
+.resume-header {
+  @apply text-center mb-6;
+  border-bottom: 1px solid #000;
+  padding-bottom: 8px;
 }
 
-.ql-editor {
-  @apply text-gray-900 leading-relaxed;
-  min-height: 150px;
+.name {
+  font-size: 16pt;
+  font-weight: bold;
+  margin-bottom: 4px;
+  letter-spacing: 0.5px;
 }
 
-.ql-editor.ql-blank::before {
-  @apply text-gray-400 italic;
+.contact-info {
+  font-size: 10pt;
+  margin-bottom: 2px;
 }
 
-.ql-editor h1 {
-  @apply text-2xl font-bold mb-4;
+/* Resume Sections */
+.resume-section {
+  @apply mb-6;
 }
 
-.ql-editor h2 {
-  @apply text-xl font-semibold mb-3;
+.section-header {
+  font-size: 12pt;
+  font-weight: bold;
+  margin-bottom: 8px;
+  padding-bottom: 2px;
+  border-bottom: 1px solid #000;
+  letter-spacing: 0.5px;
 }
 
-.ql-editor h3 {
-  @apply text-lg font-medium mb-2;
+.section-content {
+  margin-left: 0;
+  white-space: pre-wrap;
+  font-size: 11pt;
 }
 
-.ql-editor p {
-  @apply mb-3;
+.content-line {
+  margin-bottom: 2px;
+  line-height: 1.3;
 }
 
-.ql-editor ul, .ql-editor ol {
-  @apply mb-3 pl-6;
+/* Specific section styling */
+.resume-section:last-child {
+  margin-bottom: 0;
 }
 
-.ql-editor li {
-  @apply mb-1;
+/* Skills section bullets */
+.section-content:has(+ .section-header:contains("SKILLS")) .content-line:not(:first-child) {
+  margin-left: 0;
 }
 
-.ql-editor strong {
-  @apply font-semibold;
+/* Experience section formatting */
+.resume-section .section-content .content-line {
+  word-wrap: break-word;
 }
 
-.ql-editor em {
-  @apply italic;
+/* Print styles */
+@media print {
+  .resume-container {
+    box-shadow: none;
+    border: none;
+    margin: 0;
+    padding: 0.75in;
+  }
+  
+  body {
+    background: white;
+  }
+  
+  .bg-gray-50 {
+    background: white !important;
+  }
+  
+  .sticky {
+    position: static !important;
+  }
+  
+  .shadow-lg {
+    box-shadow: none !important;
+  }
 }
 
-.ql-editor a {
-  @apply text-blue-600 underline;
-}
-
-/* Custom scrollbar */
-.ql-editor::-webkit-scrollbar {
-  width: 8px;
-}
-
-.ql-editor::-webkit-scrollbar-track {
-  @apply bg-gray-100 rounded;
-}
-
-.ql-editor::-webkit-scrollbar-thumb {
-  @apply bg-gray-300 rounded;
-}
-
-.ql-editor::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-400;
+/* Hover effects for editing */
+.resume-section:hover .section-header,
+.resume-header:hover .name,
+.resume-header:hover .contact-info {
+  @apply bg-blue-50 transition-colors duration-200;
 }
 
 /* Loading animation */
@@ -82,22 +116,6 @@
 
 .animate-spin {
   animation: spin 1s linear infinite;
-}
-
-/* Responsive design */
-@media (max-width: 768px) {
-  .ql-toolbar {
-    @apply text-sm;
-  }
-  
-  .ql-toolbar .ql-formats {
-    @apply mr-2;
-  }
-}
-
-/* Focus states */
-.ql-editor:focus {
-  @apply outline-none ring-2 ring-blue-500 ring-opacity-50;
 }
 
 /* Button hover effects */
@@ -115,17 +133,42 @@
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
 }
 
-/* Print styles */
-@media print {
-  .ql-toolbar {
-    display: none !important;
+/* Responsive design */
+@media (max-width: 768px) {
+  .resume-container {
+    width: 100%;
+    padding: 0.5in;
+    font-size: 10pt;
   }
   
-  .ql-container {
-    border: none !important;
+  .name {
+    font-size: 14pt;
   }
   
-  .ql-editor {
-    padding: 0 !important;
+  .section-header {
+    font-size: 11pt;
   }
+}
+
+/* Focus states */
+textarea:focus,
+input:focus {
+  @apply outline-none ring-2 ring-blue-500;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100 rounded;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
 }

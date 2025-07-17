@@ -34,7 +34,7 @@ versions_collection = db.versions
 
 # Pydantic models
 class DocumentContent(BaseModel):
-    ops: List[Dict[str, Any]] = Field(default_factory=list)  # Quill.js delta format
+    text: str = ""
     
 class DocumentSection(BaseModel):
     id: str
@@ -76,6 +76,59 @@ def serialize_doc(doc):
         del doc['_id']
     return doc
 
+def get_default_sections():
+    """Get default resume sections with professional formatting"""
+    return [
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Personal Information",
+            "content": {"text": "YOUR NAME\nYour Number | youremail@address.com | Location | Your Website"},
+            "order": 1
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Skills",
+            "content": {"text": "• Python (Intermediate)\n• JavaScript (Native)\n• React (Advanced)\n• Node.js (Intermediate)\n• MongoDB (Beginner)"},
+            "order": 2
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Education",
+            "content": {"text": "Your School, (Degree Name ex Bachelor of Science)                    (Anticipated graduation date) Month\nYear\nMajor:        Certificate or Minor in\nGPA: (only write out if is decent and between 3.25 or 3.5+)\n\nRelevant Coursework: (Optional, only list a couple of the most relevant courses taken)"},
+            "order": 3
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Experience",
+            "content": {"text": "MOST RECENT EMPLOYER, City, State (Achievement)                    Month Year - Present\nPosition Title\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text\n\nPREVIOUS EMPLOYER, City, State (Achievement)                    Month Year - Month Year\nPosition Title\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text"},
+            "order": 4
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Projects",
+            "content": {"text": "PROJECT NAME                                                        Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest, including awards/accomplishments/outcomes achieved based on some bullet point format from experience)\n• Text\n\nANOTHER PROJECT NAME                                                Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest)\n• Text"},
+            "order": 5
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Leadership & Community",
+            "content": {"text": "ORGANIZATION                                                        Month Year - Month Year\nPosition Title\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text"},
+            "order": 6
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Awards & Honors",
+            "content": {"text": "ORGANIZATION                                                        Month Year - Month Year\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text"},
+            "order": 7
+        },
+        {
+            "id": str(uuid.uuid4()),
+            "title": "Certifications",
+            "content": {"text": "[Certification Name] | [Issuing Organization] | [Date Earned]\n[Certification ID or Credential Number]\n\n[Another Certification] | [Organization] | [Date]\n[Credential details]"},
+            "order": 8
+        }
+    ]
+
 @app.get("/")
 async def root():
     return {"message": "Google Docs 2.0 - Resume Builder API"}
@@ -84,39 +137,8 @@ async def root():
 async def create_document(request: CreateDocumentRequest):
     """Create a new document with default resume sections"""
     
-    # Default resume sections
-    default_sections = [
-        {
-            "id": str(uuid.uuid4()),
-            "title": "Personal Information",
-            "content": {"ops": [{"insert": "Full Name\nEmail | Phone | Location\nLinkedIn | Portfolio\n\n"}]},
-            "order": 1
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "title": "Professional Summary",
-            "content": {"ops": [{"insert": "Write a compelling summary of your professional background and key achievements...\n\n"}]},
-            "order": 2
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "title": "Experience",
-            "content": {"ops": [{"insert": "Job Title | Company Name | Dates\n• Achievement or responsibility\n• Achievement or responsibility\n• Achievement or responsibility\n\n"}]},
-            "order": 3
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "title": "Education",
-            "content": {"ops": [{"insert": "Degree | Institution | Graduation Date\nRelevant coursework, honors, or achievements\n\n"}]},
-            "order": 4
-        },
-        {
-            "id": str(uuid.uuid4()),
-            "title": "Skills",
-            "content": {"ops": [{"insert": "Technical Skills: \nSoft Skills: \nLanguages: \n\n"}]},
-            "order": 5
-        }
-    ]
+    # Get default resume sections
+    default_sections = get_default_sections()
     
     document = Document(
         title=request.title,
@@ -228,6 +250,25 @@ async def update_section(document_id: str, section_id: str, request: UpdateSecti
         {"id": document_id},
         {"$set": {"sections": sections, "updated_at": datetime.utcnow()}}
     )
+    
+    # Create new version for section update
+    latest_version = versions_collection.find_one(
+        {"document_id": document_id},
+        sort=[("version_number", -1)]
+    )
+    next_version_number = (latest_version["version_number"] + 1) if latest_version else 1
+    
+    version = DocumentVersion(
+        document_id=document_id,
+        version_number=next_version_number,
+        title=document["title"],
+        sections=sections,
+        description=f"Updated section - Version {next_version_number}"
+    )
+    
+    version_dict = version.model_dump()
+    version_dict['created_at'] = version.created_at
+    versions_collection.insert_one(version_dict)
     
     updated_doc = documents_collection.find_one({"id": document_id})
     return serialize_doc(updated_doc)

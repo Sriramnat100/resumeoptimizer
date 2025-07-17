@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import ReactQuill from 'react-quill';
-import 'react-quill/dist/quill.snow.css';
 import './App.css';
 import { FileText, Plus, Save, History, Download, Trash2, Edit3, Clock, ArrowLeft } from 'lucide-react';
 
@@ -16,24 +14,7 @@ function App() {
   const [saving, setSaving] = useState(false);
   const [newDocumentTitle, setNewDocumentTitle] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
-
-  // Rich text editor modules
-  const modules = {
-    toolbar: [
-      [{ 'header': [1, 2, 3, false] }],
-      ['bold', 'italic', 'underline', 'strike'],
-      [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-      [{ 'indent': '-1'}, { 'indent': '+1' }],
-      [{ 'align': [] }],
-      ['link'],
-      ['clean']
-    ],
-  };
-
-  const formats = [
-    'header', 'bold', 'italic', 'underline', 'strike',
-    'list', 'bullet', 'indent', 'align', 'link'
-  ];
+  const [editingSection, setEditingSection] = useState(null);
 
   useEffect(() => {
     fetchDocuments();
@@ -105,27 +86,19 @@ function App() {
     }
   };
 
-  const updateSection = async (sectionId, content) => {
+  const updateSectionContent = (sectionId, newContent) => {
     if (!currentDocument) return;
     
-    try {
-      // Update local state immediately for responsiveness
-      const updatedSections = currentDocument.sections.map(section =>
-        section.id === sectionId ? { ...section, content } : section
-      );
-      
-      setCurrentDocument({
-        ...currentDocument,
-        sections: updatedSections
-      });
-
-      // Save to backend
-      await axios.put(`${API_BASE_URL}/api/documents/${currentDocument.id}/sections/${sectionId}`, {
-        content
-      });
-    } catch (error) {
-      console.error('Error updating section:', error);
-    }
+    const updatedSections = currentDocument.sections.map(section =>
+      section.id === sectionId 
+        ? { ...section, content: { text: newContent } }
+        : section
+    );
+    
+    setCurrentDocument({
+      ...currentDocument,
+      sections: updatedSections
+    });
   };
 
   const deleteDocument = async (documentId) => {
@@ -181,13 +154,95 @@ function App() {
     });
   };
 
+  const getDefaultContent = (title) => {
+    const defaults = {
+      'Personal Information': 'YOUR NAME\nYour Number | youremail@address.com | Location | Your Website',
+      'Skills': '• Python (Intermediate)\n• Python (Native)\n• Python (Advanced)',
+      'Education': 'Your School, (Degree Name ex Bachelor of Science)                    (Anticipated graduation date) Month\nYear\nMajor:        Certificate or Minor in\nGPA: (only write out if is decent and between 3.25 or 3.5+)\n\nRelevant Coursework: (Optional, only list a couple of the most relevant courses taken)',
+      'Experience': 'MOST RECENT EMPLOYER, City, State (Achievement)                    Month Year - Present\nPosition Title\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text',
+      'Projects': 'PROJECT NAME                                                        Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest, including awards/accomplishments/outcomes achieved based on some bullet point format from experience)\n• Text'
+    };
+    return defaults[title] || '';
+  };
+
+  const EditableSection = ({ section, onSave, onCancel }) => {
+    const [content, setContent] = useState(section.content?.text || getDefaultContent(section.title));
+    
+    const handleSave = () => {
+      onSave(section.id, content);
+    };
+
+    return (
+      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
+          <div className="flex gap-2">
+            <button
+              onClick={handleSave}
+              className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+            >
+              Save
+            </button>
+            <button
+              onClick={onCancel}
+              className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="w-full h-32 p-3 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+          placeholder={`Enter ${section.title.toLowerCase()}...`}
+        />
+      </div>
+    );
+  };
+
+  const ResumeSection = ({ section, isEditing, onEdit }) => {
+    const content = section.content?.text || getDefaultContent(section.title);
+    
+    if (section.title === 'Personal Information') {
+      const lines = content.split('\n');
+      return (
+        <div 
+          className="resume-header cursor-pointer hover:bg-gray-50 p-2 rounded"
+          onClick={() => onEdit(section.id)}
+        >
+          <div className="name">{lines[0] || 'YOUR NAME'}</div>
+          <div className="contact-info">{lines[1] || 'Contact Information'}</div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="resume-section">
+        <div 
+          className="section-header cursor-pointer hover:bg-gray-50 p-1 rounded"
+          onClick={() => onEdit(section.id)}
+        >
+          {section.title.toUpperCase()}
+        </div>
+        <div className="section-content">
+          {content.split('\n').map((line, index) => (
+            <div key={index} className="content-line">
+              {line || <br />}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
   if (currentView === 'home') {
     return (
       <div className="min-h-screen bg-gray-50">
         <div className="max-w-6xl mx-auto p-6">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Google Docs 2.0</h1>
-            <p className="text-gray-600">Create and edit your resume with powerful rich text editing</p>
+            <p className="text-gray-600">Create and edit professional resumes with traditional formatting</p>
           </div>
 
           <div className="mb-6">
@@ -393,25 +448,45 @@ function App() {
         </div>
 
         <div className="max-w-4xl mx-auto p-6">
-          <div className="space-y-8">
-            {currentDocument.sections.map((section) => (
-              <div key={section.id} className="bg-white rounded-lg shadow-sm border border-gray-200">
-                <div className="border-b border-gray-200 px-6 py-4">
-                  <h2 className="text-lg font-semibold text-gray-900">{section.title}</h2>
-                </div>
-                
-                <div className="p-6">
-                  <ReactQuill
-                    value={section.content}
-                    onChange={(content) => updateSection(section.id, { ops: content })}
-                    modules={modules}
-                    formats={formats}
-                    className="min-h-32"
-                    placeholder={`Enter your ${section.title.toLowerCase()}...`}
-                  />
-                </div>
+          <div className="flex gap-8">
+            {/* Resume Preview */}
+            <div className="flex-1">
+              <div className="resume-container">
+                {currentDocument.sections.map((section) => (
+                  <div key={section.id}>
+                    {editingSection === section.id ? (
+                      <EditableSection
+                        section={section}
+                        onSave={(sectionId, content) => {
+                          updateSectionContent(sectionId, content);
+                          setEditingSection(null);
+                        }}
+                        onCancel={() => setEditingSection(null)}
+                      />
+                    ) : (
+                      <ResumeSection
+                        section={section}
+                        isEditing={editingSection === section.id}
+                        onEdit={(sectionId) => setEditingSection(sectionId)}
+                      />
+                    )}
+                  </div>
+                ))}
               </div>
-            ))}
+            </div>
+
+            {/* Instructions */}
+            <div className="w-80">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 sticky top-24">
+                <h3 className="font-semibold text-blue-900 mb-2">How to Edit</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Click on any section to edit</li>
+                  <li>• Use the traditional resume format</li>
+                  <li>• Changes are saved automatically</li>
+                  <li>• Access version history anytime</li>
+                </ul>
+              </div>
+            </div>
           </div>
         </div>
       </div>
