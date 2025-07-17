@@ -266,19 +266,19 @@ function App() {
     };
 
     return (
-      <div className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      <div className="bg-blue-50 p-6 rounded-lg shadow-sm border border-blue-200 mb-6">
         <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">{section.title}</h3>
+          <h3 className="text-lg font-semibold text-blue-900">Edit {section.title}</h3>
           <div className="flex gap-2">
             <button
               onClick={handleSave}
-              className="px-3 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+              className="px-4 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors"
             >
               Save
             </button>
             <button
               onClick={onCancel}
-              className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600"
+              className="px-4 py-2 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 transition-colors"
             >
               Cancel
             </button>
@@ -287,9 +287,13 @@ function App() {
         <textarea
           value={content}
           onChange={(e) => setContent(e.target.value)}
-          className="w-full h-32 p-3 border border-gray-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+          className="w-full h-48 p-4 border border-blue-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
           placeholder={`Enter ${section.title.toLowerCase()}...`}
+          autoFocus
         />
+        <div className="mt-2 text-sm text-blue-600">
+          <strong>Tip:</strong> Use the traditional resume format shown in the preview. Keep professional formatting and bullet points.
+        </div>
       </div>
     );
   };
