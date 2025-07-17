@@ -377,8 +377,9 @@ function App() {
             <SectionControls section={section} isFirst={isFirst} isLast={isLast} />
           </div>
           <div 
-            className="resume-header cursor-pointer hover:bg-gray-50 p-2 rounded"
+            className="resume-header cursor-pointer hover:bg-blue-50 p-2 rounded border border-transparent hover:border-blue-200 transition-all"
             onClick={() => onEdit(section.id)}
+            title="Click to edit"
           >
             <div className="name">{lines[0] || 'YOUR NAME'}</div>
             <div className="contact-info">{lines[1] || 'Contact Information'}</div>
@@ -409,12 +410,17 @@ function App() {
         
         <div className="resume-section">
           <div 
-            className="section-header cursor-pointer hover:bg-gray-50 p-1 rounded"
+            className="section-header cursor-pointer hover:bg-blue-50 p-1 rounded border border-transparent hover:border-blue-200 transition-all"
             onClick={() => onEdit(section.id)}
+            title="Click to edit"
           >
             {section.title.toUpperCase()}
           </div>
-          <div className="section-content">
+          <div 
+            className="section-content cursor-pointer hover:bg-blue-50 p-2 rounded border border-transparent hover:border-blue-200 transition-all"
+            onClick={() => onEdit(section.id)}
+            title="Click to edit"
+          >
             {content.split('\n').map((line, index) => (
               <div key={index} className="content-line">
                 {line || <br />}
