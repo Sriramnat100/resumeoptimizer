@@ -81,4 +81,30 @@ agenthub/agents/youtube/db
 .cache/
 
 # Mobile development
-android-sdk/ 
+android-sdk/
+
+# Additional Python patterns
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Additional Node.js patterns
+.npm
+.eslintcache
+.nyc_output
+
+# Additional system files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Project-specific
+.emergent/
+*.log

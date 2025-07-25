@@ -236,3 +236,25 @@ input:focus {
 .drop-target {
   @apply border-2 border-dashed border-blue-400 bg-blue-50;
 }
+
+/* Date alignment styles */
+.resume-date {
+  @apply text-gray-600 font-medium;
+}
+
+.resume-date-right {
+  @apply text-right;
+}
+
+.resume-date-center {
+  @apply text-center;
+}
+
+/* Ensure proper spacing for date alignment */
+.section-content .flex {
+  @apply gap-4;
+}
+
+.section-content .flex-shrink-0 {
+  @apply min-w-0;
+}
