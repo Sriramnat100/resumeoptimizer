@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, X, Edit3, Trash2, Tag, Filter, CheckCircle, AlertCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Tag, Plus, Edit3, Trash2, X, AlertCircle } from 'lucide-react';
 
 const LabelManager = ({
   labels = [],
@@ -20,16 +20,16 @@ const LabelManager = ({
   const [error, setError] = useState(null);
 
   const colorOptions = [
-    { name: 'blue', class: 'bg-blue-500', hover: 'hover:bg-blue-600' },
-    { name: 'green', class: 'bg-green-500', hover: 'hover:bg-green-600' },
-    { name: 'purple', class: 'bg-purple-500', hover: 'hover:bg-purple-600' },
-    { name: 'red', class: 'bg-red-500', hover: 'hover:bg-red-600' },
-    { name: 'orange', class: 'bg-orange-500', hover: 'hover:bg-orange-600' },
-    { name: 'yellow', class: 'bg-yellow-500', hover: 'hover:bg-yellow-600' },
-    { name: 'pink', class: 'bg-pink-500', hover: 'hover:bg-pink-600' },
-    { name: 'indigo', class: 'bg-indigo-500', hover: 'hover:bg-indigo-600' },
-    { name: 'teal', class: 'bg-teal-500', hover: 'hover:bg-teal-600' },
-    { name: 'cyan', class: 'bg-cyan-500', hover: 'hover:bg-cyan-600' }
+    { name: 'blue', class: 'bg-blue-500' },
+    { name: 'green', class: 'bg-green-500' },
+    { name: 'purple', class: 'bg-purple-500' },
+    { name: 'red', class: 'bg-red-500' },
+    { name: 'orange', class: 'bg-orange-500' },
+    { name: 'yellow', class: 'bg-yellow-500' },
+    { name: 'pink', class: 'bg-pink-500' },
+    { name: 'indigo', class: 'bg-indigo-500' },
+    { name: 'teal', class: 'bg-teal-500' },
+    { name: 'cyan', class: 'bg-cyan-500' }
   ];
 
   const getLabelColor = (color) => {
@@ -49,8 +49,8 @@ const LabelManager = ({
   };
 
   const getDocumentCount = (labelId) => {
-    if (labelId === 'all') return documents.length;
-    return documents.filter(doc => doc.label === labelId).length;
+    if (labelId === 'all') return documents.filter(doc => doc).length; // Add safety check
+    return documents.filter(doc => doc && doc.label === labelId).length; // Add safety check
   };
 
   const handleCreateLabel = async () => {
@@ -113,6 +113,9 @@ const LabelManager = ({
 
     try {
       await onDeleteLabel(label.id);
+      // Remove this line that was causing navigation to create form
+      // setShowCreateForm(true);
+      setError(null); // Clear any previous errors
     } catch (error) {
       setError('Failed to delete label. Please try again.');
       console.error('Delete label error:', error);
@@ -137,82 +140,85 @@ const LabelManager = ({
   };
 
   return (
-    <div className={`space-y-6 ${className}`}>
-      {/* Label Filter Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-2">
-            <Filter className="h-5 w-5 text-gray-600" />
+    <div className={`bg-white/80 backdrop-blur-sm rounded-xl border border-gray-200/50 p-6 ${className}`}>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div className="bg-gradient-to-r from-purple-500 to-pink-500 p-2 rounded-lg">
+            <Tag className="h-5 w-5 text-white" />
+          </div>
+          <div>
             <h3 className="text-lg font-semibold text-gray-900">Filter Documents</h3>
+            <p className="text-sm text-gray-500">Organize your resumes with labels</p>
           </div>
-          <button
-            onClick={() => setShowCreateForm(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
-          >
-            <Plus size={16} />
-            New Label
-          </button>
         </div>
-
-        {/* Filter Buttons */}
-        <div className="flex flex-wrap gap-3">
-          <button
-            onClick={() => onLabelSelect('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              selectedLabel === 'all'
-                ? 'bg-blue-600 text-white shadow-md'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Tag size={14} />
-              All Documents ({getDocumentCount('all')})
-            </div>
-          </button>
-          
-          {labels.map(label => (
-            <div key={label.id} className="relative group">
-              <button
-                onClick={() => onLabelSelect(label.id)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
-                  selectedLabel === label.id
-                    ? 'shadow-md'
-                    : 'hover:bg-gray-50'
-                } ${getLabelColor(label.color)}`}
-              >
-                <div className={`w-3 h-3 rounded-full ${colorOptions.find(c => c.name === label.color)?.class}`} />
-                {label.name} ({getDocumentCount(label.id)})
-              </button>
-              
-              {/* Edit/Delete Menu */}
-              <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity z-10 min-w-[120px]">
-                <button
-                  onClick={() => openEditForm(label)}
-                  className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
-                >
-                  <Edit3 size={14} />
-                  Edit
-                </button>
-                <button
-                  onClick={() => handleDeleteLabel(label)}
-                  className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                >
-                  <Trash2 size={14} />
-                  Delete
-                </button>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {labels.length === 0 && (
-          <div className="text-center py-8 text-gray-500">
-            <Tag className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-sm">No labels created yet</p>
-            <p className="text-xs text-gray-400 mt-1">Create your first label to organize documents</p>
-          </div>
-        )}
+        
+        <button
+          onClick={() => setShowCreateForm(true)}
+          className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+        >
+          <Plus size={16} />
+          New Label
+        </button>
       </div>
+
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => onLabelSelect('all')}
+          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+            selectedLabel === 'all'
+              ? 'bg-blue-100 text-blue-700 border border-blue-200 shadow-md'
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+          }`}
+        >
+          <div className="w-3 h-3 rounded-full bg-gray-500" />
+          <div className="flex items-center gap-2">
+            <Tag size={14} />
+            All Documents ({getDocumentCount('all')})
+          </div>
+        </button>
+        
+        {labels.map(label => (
+          <div key={label.id} className="relative group">
+            <button
+              onClick={() => onLabelSelect(label.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${
+                selectedLabel === label.id
+                  ? 'shadow-md'
+                  : 'hover:bg-gray-50'
+              } ${getLabelColor(label.color)}`}
+            >
+              <div className={`w-3 h-3 rounded-full ${colorOptions.find(c => c.name === label.color)?.class}`} />
+              {label.name} ({getDocumentCount(label.id)})
+            </button>
+            
+            {/* Edit/Delete Menu */}
+            <div className="absolute right-0 top-full mt-1 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 group-hover:opacity-100 transition-opacity z-10 min-w-[120px]">
+              <button
+                onClick={() => openEditForm(label)}
+                className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+              >
+                <Edit3 size={14} />
+                Edit
+              </button>
+              <button
+                onClick={() => handleDeleteLabel(label)}
+                className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+              >
+                <Trash2 size={14} />
+                Delete
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {labels.length === 0 && (
+        <div className="text-center py-8 text-gray-500">
+          <Tag className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+          <p className="text-sm">No labels created yet</p>
+          <p className="text-xs text-gray-400 mt-1">Create your first label to organize documents</p>
+        </div>
+      )}
 
       {/* Create Label Modal */}
       {showCreateForm && (
@@ -273,24 +279,14 @@ const LabelManager = ({
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleCreateLabel}
-                disabled={!newLabelName.trim() || isSubmitting}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors font-medium flex items-center justify-center gap-2"
+                disabled={isSubmitting || !newLabelName.trim()}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Creating...
-                  </>
-                ) : (
-                  <>
-                    <Plus size={16} />
-                    Create Label
-                  </>
-                )}
+                {isSubmitting ? 'Creating...' : 'Create Label'}
               </button>
               <button
                 onClick={closeForms}
-                className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>
@@ -329,7 +325,7 @@ const LabelManager = ({
                   type="text"
                   value={newLabelName}
                   onChange={(e) => setNewLabelName(e.target.value)}
-                  placeholder="Enter label name..."
+                  placeholder="e.g., Frontend, Backend, Data Science..."
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   onKeyPress={(e) => e.key === 'Enter' && handleEditLabel()}
                   autoFocus
@@ -347,7 +343,7 @@ const LabelManager = ({
                         newLabelColor === color.name 
                           ? 'border-gray-800 scale-110 shadow-lg' 
                           : 'border-gray-300 hover:border-gray-400'
-                        } ${color.class}`}
+                      } ${color.class}`}
                       title={color.name}
                     />
                   ))}
@@ -358,24 +354,14 @@ const LabelManager = ({
             <div className="flex gap-3 mt-6">
               <button
                 onClick={handleEditLabel}
-                disabled={!newLabelName.trim() || isSubmitting}
-                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors font-medium flex items-center justify-center gap-2"
+                disabled={isSubmitting || !newLabelName.trim()}
+                className="flex-1 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition-colors"
               >
-                {isSubmitting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Updating...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle size={16} />
-                    Update Label
-                  </>
-                )}
+                {isSubmitting ? 'Updating...' : 'Update Label'}
               </button>
               <button
                 onClick={closeForms}
-                className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors font-medium"
+                className="flex-1 bg-gray-500 text-white px-4 py-2 rounded-lg hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>

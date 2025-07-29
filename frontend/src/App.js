@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
-import { FileText, Plus, Save, History, Trash2, Edit3, Clock, ArrowLeft, ChevronUp, ChevronDown, LogOut, User, Linkedin, Globe, Sparkles, Zap, Award, Users, Bot, Send, Download } from 'lucide-react';
+import { FileText, Plus, Save, History, Trash2, Edit3, Clock, ArrowLeft, ChevronUp, ChevronDown, LogOut, User, Linkedin, Globe, Sparkles, Zap, Award, Users, Bot, Send, Download, Tag, ChevronDown as ChevronDownIcon, Check } from 'lucide-react';
 import { AuthProvider, useAuth } from './AuthContext';
 import Login from './Login';
 import Register from './Register';
@@ -14,12 +14,16 @@ import LabelManager from './components/LabelManager';
 import { formatResumeContent, getDefaultContent } from './utils/resumeUtils';
 import ResumeSection from './components/ResumeSection';
 import { useDocuments } from './hooks/useDocuments';
+import { useLabels } from './hooks/useLabels';
 import { formatDate } from './utils/dateUtils';
+import DocumentLabelSelector from './components/DocumentLabelSelector';
 
 console.log("hello");
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 function AppContent() {
+  console.log('🏷️ [APP] AppContent component rendering');
+  
   const {
     documents,
     currentDocument,
@@ -34,7 +38,6 @@ function AppContent() {
     deleteDocument,
     setNewDocumentTitle,
     setNewDocumentLabel,
-    // ADD THESE MISSING FUNCTIONS:
     setDocuments,
     fetchVersions,
     openDocument,
@@ -45,127 +48,54 @@ function AppContent() {
     moveSectionDown,
     updateSectionContent,
     addNewEntry,
-    applyEdit
+    applyEdit,
+    updateDocumentLabel
   } = useDocuments();
 
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
+  
+  console.log('🏷️ [APP] Authentication state:', { isAuthenticated, authLoading, user: user?.username });
+  
+  // Use the useLabels hook instead of inline label management
+  const {
+    labels,
+    selectedLabel,
+    loading: labelsLoading,
+    error: labelsError,
+    fetchLabels,
+    createCustomLabel,
+    deleteLabel,
+    editLabel,
+    setSelectedLabel,
+    getLabelColor,
+    getDocumentCount,
+    getFilteredDocuments,
+    addLabelToDocument,
+    removeLabelFromDocuments
+  } = useLabels();
+
   const [currentView, setCurrentView] = useState('home'); // 'home', 'editor', 'versions'
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [showAddForm, setShowAddForm] = useState(null);
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
-  
+  const [openDropdownDocId, setOpenDropdownDocId] = useState(null);
 
-  
-  
-
-  // Label System State
-  const [labels, setLabels] = useState([]); // Start with empty labels
-  const [selectedLabel, setSelectedLabel] = useState('all');
-
+  // Fixed useEffect - removed circular dependencies
   useEffect(() => {
-    if (isAuthenticated) {
-      fetchDocuments();
-    }
-  }, [isAuthenticated]);
-
-  // Add these functions right after the existing useEffect hooks (around line 100)
-
-  // Label Management Functions
-  const fetchLabels = async () => {
-    console.log('🔄 fetchLabels called!');
-    console.log('🔄 Current labels state before fetch:', labels);
-    
-    // If we already have labels, don't fetch again
-    if (labels.length > 0) {
-      console.log('🏷️ Labels already loaded, skipping fetch');
-      return;
-    }
-    
-    try {
-      const token = localStorage.getItem('token');
-      console.log('🔑 Token from localStorage:', token ? 'Token exists' : 'No token');
-      
-      if (!token) {
-        console.log('⚠️ No token found, skipping label fetch');
-        return;
-      }
-      
-      console.log('📡 Making GET request to fetch labels...');
-      const response = await axios.get(`${API_BASE_URL}/api/labels`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-      
-      console.log('✅ Labels fetched from backend:', response.data);
-      console.log('✅ About to call setLabels with:', response.data);
-      
-      setLabels(response.data);
-      
-    } catch (error) {
-      console.error('❌ Error fetching labels:', error);
-      console.error('❌ Error details:', error.response?.data);
-    }
-  };
-
-  const createLabelInBackend = async (name, color) => {
-    console.log('🚀 createLabelInBackend called with:', { name, color });
-    
-    try {
-      const token = localStorage.getItem('token');
-      console.log('🔑 Token check:', token ? 'Token exists' : 'No token found');
-      
-      if (!token) {
-        throw new Error('No authentication token');
-      }
-      
-      console.log('📡 Making API call to:', `${API_BASE_URL}/api/labels`);
-      
-      const response = await axios.post(`${API_BASE_URL}/api/labels`, {
-        name: name,
-        color: color
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      console.log('✅ API response:', response.data);
-      return response.data;
-    } catch (error) {
-      console.error('❌ API Error:', error);
-      throw error;
-    }
-  };
-
-  // Add useEffect to load labels when user is authenticated (around line 80)
-  useEffect(() => {
-    console.log('🔄 useEffect triggered - User authentication changed:');
-    console.log('   isAuthenticated:', isAuthenticated);
-    console.log('   user:', user);
-    console.log('   authLoading:', authLoading);
+    console.log('👤 [APP] useEffect triggered:', { isAuthenticated, user, authLoading });
     
     // Only fetch data when user becomes authenticated AND we don't already have data
     if (isAuthenticated && user && !authLoading) {
-      console.log('👤 User is authenticated, fetching data...');
+      console.log('👤 [APP] User is authenticated, fetching data...');
       
-      // Only fetch documents if we don't have any
-      if (documents.length === 0) {
-        console.log('📄 Fetching documents...');
-        fetchDocuments();
-      }
-      
-      // Only fetch labels if we don't have any  
-      if (labels.length === 0) {
-        console.log('🏷️ Fetching labels...');
-        fetchLabels();
-      }
+      // Fetch documents and labels
+      fetchDocuments();
+      fetchLabels();
     } else {
-      console.log('❌ User not authenticated or still loading');
+      console.log('❌ [APP] User not authenticated or still loading');
     }
-  }, [isAuthenticated, user, authLoading]); // Add authLoading to dependencies
+  }, [isAuthenticated, user, authLoading]); // Removed fetchDocuments and fetchLabels from dependencies
 
   // Add this useEffect to track currentView changes
   useEffect(() => {
@@ -191,9 +121,6 @@ function AppContent() {
       <Register onSwitchToLogin={() => setAuthMode('login')} />
     );
   }
-
-
-
 
   const downloadPDF = async () => {
     if (!currentDocument) return;
@@ -245,111 +172,64 @@ function AppContent() {
     }
   };
 
-  
-  // Add helper functions after the existing functions
-  const getLabelColor = (color) => {
-    const colors = {
-      blue: 'bg-blue-100 text-blue-700 border-blue-200',
-      green: 'bg-green-100 text-green-700 border-green-200',
-      purple: 'bg-purple-100 text-purple-700 border-purple-200',
-      red: 'bg-red-100 text-red-700 border-red-200',
-      orange: 'bg-orange-100 text-orange-700 border-orange-200',
-      yellow: 'bg-yellow-100 text-yellow-700 border-yellow-200',
-      pink: 'bg-pink-100 text-pink-700 border-pink-200',
-      indigo: 'bg-indigo-100 text-indigo-700 border-indigo-200'
-    };
-    return colors[color] || colors.blue;
-  };
-
-  const getFilteredDocuments = () => {
-    if (selectedLabel === 'all') {
-      return documents;
-    }
-    return documents.filter(doc => doc.label === selectedLabel);
-  };
-
-  const addLabelToDocument = (documentId, labelId) => {
-    setDocuments(docs => 
-      docs.map(doc => 
-        doc.id === documentId 
-          ? { ...doc, label: labelId }
-          : doc
-      )
-    );
-  };
-
-  // Add helper functions for custom label management
-  const createCustomLabel = async (name, color) => {
-    console.log('🔥 createCustomLabel function called with:', { name, color });
-    
-    if (!name.trim()) {
-      console.log('⚠️ Label name is empty');
-      throw new Error('Label name cannot be empty');
-    }
-    
-    console.log('🚀 About to call backend...');
-    
+  // Updated helper functions to use the hook
+  const handleDeleteLabel = async (labelId) => {
     try {
-      // Call the backend to create the label
-      const createdLabel = await createLabelInBackend(name.trim(), color);
-      console.log('✅ Label created in backend:', createdLabel);
-      
-      // Update local state with the backend response
-      setLabels([...labels, createdLabel]);
-      
-      console.log('✅ Label added to frontend state');
-      return createdLabel;
+      await deleteLabel(labelId);
+      // Remove label from documents that use it
+      removeLabelFromDocuments(labelId, setDocuments);
     } catch (error) {
-      console.error('❌ Failed to create label:', error);
+      console.error('Failed to delete label:', error);
+    }
+  };
+
+  const handleCreateLabel = async (name, color) => {
+    try {
+      return await createCustomLabel(name, color);
+    } catch (error) {
+      console.error('Failed to create label:', error);
       throw error;
     }
   };
 
-  const deleteLabel = (labelId) => {
-    setLabels(labels.filter(label => label.id !== labelId));
-    // Remove label from documents that use it
-    setDocuments(docs => 
-      docs.map(doc => 
-        doc.label === labelId ? { ...doc, label: '' } : doc
-      )
-    );
-    if (selectedLabel === labelId) {
-      setSelectedLabel('all');
+  const handleEditLabel = async (labelId, name, color) => {
+    try {
+      return await editLabel(labelId, name, color);
+    } catch (error) {
+      console.error('Failed to edit label:', error);
+      throw error;
     }
   };
 
-  const editLabel = async (labelId, name, color) => {
-    console.log('✏️ editLabel called with:', { labelId, name, color });
+  const handleAddLabelToDocument = (documentId, labelId) => {
+    addLabelToDocument(documentId, labelId, setDocuments);
+  };
+
+  // Add this handler for updating document labels
+  const handleUpdateDocumentLabel = async (documentId, labelId) => {
+    console.log('🎯 [HANDLER] handleUpdateDocumentLabel called');
+    console.log('🎯 [HANDLER] Document ID:', documentId);
+    console.log('🎯 [HANDLER] Label ID:', labelId);
+    console.log('🎯 [HANDLER] Label ID is null:', labelId === null);
+    console.log('🎯 [HANDLER] updateDocumentLabel function exists:', typeof updateDocumentLabel);
     
     try {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
+      console.log('🎯 [HANDLER] Calling updateDocumentLabel...');
+      const updated = await updateDocumentLabel(documentId, labelId);
+      console.log('✅ [HANDLER] updateDocumentLabel completed successfully');
+      console.log('✅ [HANDLER] Updated document:', updated);
 
-      const response = await axios.put(`${API_BASE_URL}/api/labels/${labelId}`, {
-        name: name,
-        color: color
-      }, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
-
-      console.log('✅ Label updated in backend:', response.data);
-      
-      // Update the label in the frontend state
-      setLabels(labels.map(label => 
-        label.id === labelId 
-          ? { ...label, name: name, color: color }
-          : label
-      ));
-
-      return response.data;
+      return updated;
     } catch (error) {
-      console.error('❌ Failed to update label:', error);
+      console.error("❌ [HANDLER] Failed to update document label:", error);
+      console.error("❌ [HANDLER] Error details:", error.response?.data || error.message);
       throw error;
     }
+  };
+
+  // Handler for dropdown toggle to manage z-index
+  const handleDropdownToggle = (documentId, isOpen) => {
+    setOpenDropdownDocId(isOpen ? documentId : null);
   };
 
   if (currentView === 'home') {
@@ -540,9 +420,9 @@ function AppContent() {
             selectedLabel={selectedLabel}
             documents={documents}
             onLabelSelect={setSelectedLabel}
-            onCreateLabel={createCustomLabel}
-            onDeleteLabel={deleteLabel}
-            onEditLabel={editLabel}
+            onCreateLabel={handleCreateLabel}
+            onDeleteLabel={handleDeleteLabel}
+            onEditLabel={handleEditLabel}
           />
 
           {/* Documents Grid */}
@@ -555,8 +435,8 @@ function AppContent() {
             <div>
               <h3 className="text-xl font-semibold text-gray-900 mb-6">Your Resumes</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {getFilteredDocuments().map((doc) => (
-                  <div key={doc.id} className="bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-200/50 overflow-hidden group">
+                {getFilteredDocuments(documents).filter(doc => doc && doc.id).map((doc) => (
+                  <div key={doc.id} className={`bg-white/80 backdrop-blur-sm rounded-xl shadow-lg hover:shadow-xl transition-all duration-200 border border-gray-200/50 group relative ${openDropdownDocId === doc.id ? 'z-50' : ''}`}>
                     <div className="p-6">
                       <div className="flex items-start justify-between mb-4">
                         <div className="bg-gradient-to-r from-blue-500 to-indigo-500 p-3 rounded-lg">
@@ -585,17 +465,19 @@ function AppContent() {
                       
                       <h3 className="text-lg font-semibold text-gray-900 mb-2">{doc.title}</h3>
                       
-                      {/* Label Display */}
-                      {doc.label && (
-                        <div className="mb-3">
-                          <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium border ${getLabelColor(labels.find(l => l.id === doc.label)?.color)}`}>
-                            {labels.find(l => l.id === doc.label)?.name}
-                          </span>
-                        </div>
-                      )}
+                      {/* Replace the old label display with the new selector */}
+                      <div className="mb-3">
+                        <DocumentLabelSelector
+                          document={doc}
+                          labels={labels}
+                          onLabelChange={handleUpdateDocumentLabel}
+                          getLabelColor={getLabelColor}
+                          onDropdownToggle={handleDropdownToggle}
+                        />
+                      </div>
                       
                       <p className="text-sm text-gray-600 mb-4">
-                        Last modified: {formatDate(doc.updated_at)}
+                        Last modified: {doc.updated_at ? formatDate(doc.updated_at) : 'Unknown'}
                       </p>
                       
                       <button
@@ -660,7 +542,7 @@ function AppContent() {
             </div>
           ) : (
             <div className="space-y-4">
-              {versions.map((version) => (
+              {versions.filter(version => version && version.id).map((version) => (
                 <div key={version.id} className="bg-white rounded-lg shadow-md p-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -802,7 +684,7 @@ function AppContent() {
               <div className="space-y-3">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Add Content</h4>
                 
-                {currentDocument.sections.map((section) => (
+                {currentDocument.sections && currentDocument.sections.filter(section => section && section.id).map((section) => (
                   // Skip Personal Information section as it doesn't need an add form
                   section.title !== 'Personal Information' && (
                     <button
@@ -847,7 +729,7 @@ function AppContent() {
               <div className="mt-8 pt-6 border-t border-gray-200">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Reorder Sections</h4>
                 <div className="space-y-2">
-                  {currentDocument.sections.map((section, index) => (
+                  {currentDocument.sections && currentDocument.sections.filter(section => section && section.id).map((section, index) => (
                     // Skip Personal Information section as it should always be at the top
                     section.title !== 'Personal Information' && (
                       <div key={section.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
@@ -865,7 +747,7 @@ function AppContent() {
                           </button>
                           <button
                             onClick={() => moveSectionDown(section.id)}
-                            disabled={index === currentDocument.sections.length - 1}
+                            disabled={index === (currentDocument.sections?.length || 0) - 1}
                             className="p-1 text-gray-500 hover:text-blue-600 disabled:text-gray-300 disabled:cursor-not-allowed rounded"
                             title="Move down"
                           >
@@ -909,7 +791,7 @@ function AppContent() {
           <div className="flex-1 overflow-auto">
             <div className="max-w-4xl mx-auto p-6">
               <div className="resume-container">
-                {currentDocument.sections.map((section, index) => (
+                {currentDocument.sections && currentDocument.sections.filter(section => section && section.id).map((section, index) => (
                   <div key={section.id}>
                     {editingSection === section.id ? (
                       <EditableSection

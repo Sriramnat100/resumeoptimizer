@@ -410,6 +410,13 @@ async def get_document(document_id: str, current_user: dict = Depends(get_curren
 @app.put("/api/documents/{document_id}")
 async def update_document(document_id: str, request: UpdateDocumentRequest, current_user: dict = Depends(get_current_user)):
     """Update a document"""
+    print(f"🔄 UPDATE DOCUMENT REQUEST:")
+    print(f"   Document ID: {document_id}")
+    print(f"   Request data: {request.dict()}")
+    print(f"   Label field: {request.label}")
+    print(f"   Label is None: {request.label is None}")
+    print(f"   User ID: {current_user['id']}")
+    
     try:
         # Check if document exists and belongs to user
         document = documents_collection.find_one({
@@ -418,31 +425,56 @@ async def update_document(document_id: str, request: UpdateDocumentRequest, curr
         })
         
         if not document:
+            print(f"❌ Document not found: {document_id}")
             raise HTTPException(status_code=404, detail="Document not found")
         
-        # Validate label if provided
-        if request.label:
+        print(f"✅ Document found: {document['title']}")
+        
+        # Validate label if provided (but allow None/null for removal)
+        if request.label is not None and request.label:
+            print(f"🔍 Validating label: {request.label}")
             label = labels_collection.find_one({
                 "id": request.label,
                 "user_id": current_user["id"]
             })
             if not label:
+                print(f"❌ Invalid label: {request.label}")
                 raise HTTPException(status_code=400, detail="Invalid label")
+            print(f"✅ Label validated: {label['name']}")
+        elif request.label is None:
+            print(f"🗑️ Removing label (label is None)")
         
         # Prepare update data
         update_data = {"updated_at": datetime.utcnow()}
+        
         if request.title is not None:
             update_data["title"] = request.title
+            print(f"📝 Updating title to: {request.title}")
         if request.sections is not None:
             update_data["sections"] = [section.dict() for section in request.sections]
+            print(f"📝 Updating sections (count: {len(request.sections)})")
         if request.label is not None:
-            update_data["label"] = request.label  # Add this line
+            if request.label:  # If label has a value, set it
+                update_data["label"] = request.label
+                print(f"🏷️ Setting label to: {request.label}")
+            else:  # If label is None/null, set it to None explicitly
+                update_data["label"] = None
+                print(f"🗑️ Setting label to None (removing label)")
+        
+        print(f"📝 Final update data: {update_data}")
+        
+        # Build the update operation
+        update_operation = {"$set": update_data}
+        
+        print(f"🔧 MongoDB update operation: {update_operation}")
         
         # Update document
-        documents_collection.update_one(
+        result = documents_collection.update_one(
             {"id": document_id, "user_id": current_user["id"]},
-            {"$set": update_data}
+            update_operation
         )
+        
+        print(f"✅ Update result: {result.modified_count} document(s) modified")
         
         # Create version if sections were updated
         if request.sections is not None:
@@ -460,11 +492,16 @@ async def update_document(document_id: str, request: UpdateDocumentRequest, curr
             }
             
             versions_collection.insert_one(version_data)
+            print(f"📚 Created version {current_version}")
         
         # Return updated document
         updated_document = documents_collection.find_one({"id": document_id, "user_id": current_user["id"]})
+        print(f"📤 Returning updated document: {updated_document['title']}")
+        print(f"📤 Updated document label: {updated_document.get('label', 'No label')}")
+        
         return serialize_doc(updated_document)
     except Exception as e:
+        print(f"❌ Error updating document: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.put("/api/documents/{document_id}/sections/{section_id}")
@@ -800,7 +837,7 @@ async def delete_label(label_id: str, current_user: dict = Depends(get_current_u
         print(f"🔍 Removing label from documents...")
         result = documents_collection.update_many(
             {"user_id": current_user["id"], "label": label_id},
-            {"$unset": {"label": ""}}
+            {"$set": {"label": None}}
         )
         print(f"📄 Updated {result.modified_count} documents")
         
