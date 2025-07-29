@@ -7,7 +7,7 @@
   @apply bg-white shadow-lg rounded-lg overflow-hidden;
   width: 8.5in;
   min-height: 11in;
-  padding: 0.75in;
+  padding: 0.4in;
   margin: 0 auto;
   font-family: 'Times New Roman', serif;
   font-size: 11pt;
@@ -46,6 +46,9 @@
   padding-bottom: 2px;
   border-bottom: 1px solid #000;
   letter-spacing: 0.5px;
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .section-content {
@@ -92,11 +95,22 @@
     box-shadow: none;
     border: none;
     margin: 0;
-    padding: 0.75in;
+    padding: 0.4in;
+    background: white !important;
   }
   
   body {
     background: white;
+  }
+  
+  .section-header {
+    border-bottom: 1px solid #000 !important;
+    display: block !important;
+    width: 100% !important;
+  }
+  
+  .resume-section {
+    page-break-inside: avoid;
   }
   
   .bg-gray-50 {
@@ -179,7 +193,7 @@
 @media (max-width: 768px) {
   .resume-container {
     width: 100%;
-    padding: 0.5in;
+    padding: 0.4in;
     font-size: 10pt;
   }
   

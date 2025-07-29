@@ -48,6 +48,7 @@ function AppContent() {
     moveSectionDown,
     updateSectionContent,
     addNewEntry,
+    deleteSection,
     applyEdit,
     updateDocumentLabel
   } = useDocuments();
@@ -133,16 +134,46 @@ function AppContent() {
         return;
       }
 
-      // Use html2canvas to capture the resume
+      // Temporarily hide the AI Assistant to avoid capturing it
+      const aiAssistant = document.querySelector('.w-96.border-l.border-gray-200');
+      const originalDisplay = aiAssistant ? aiAssistant.style.display : '';
+      if (aiAssistant) {
+        aiAssistant.style.display = 'none';
+      }
+
+      // Use html2canvas to capture the resume with better settings
       const canvas = await html2canvas(resumeElement, {
-        scale: 2, // Higher quality
+        scale: 1.5, // Better quality than 1, but not as heavy as 2
         useCORS: true,
         allowTaint: true,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        logging: false,
+        removeContainer: true,
+        width: resumeElement.offsetWidth,
+        height: resumeElement.offsetHeight,
+        // Better rendering options
+        foreignObjectRendering: false,
+        imageTimeout: 0,
+        onclone: (clonedDoc) => {
+          // Ensure proper styling in the cloned document
+          const clonedResume = clonedDoc.querySelector('.resume-container');
+          if (clonedResume) {
+            clonedResume.style.width = '100%';
+            clonedResume.style.maxWidth = '800px';
+            clonedResume.style.margin = '0 auto';
+            clonedResume.style.padding = '20px';
+            clonedResume.style.backgroundColor = '#ffffff';
+          }
+        }
       });
 
-      // Convert canvas to PDF
-      const imgData = canvas.toDataURL('image/png');
+      // Restore AI Assistant visibility
+      if (aiAssistant) {
+        aiAssistant.style.display = originalDisplay;
+      }
+
+      // Convert canvas to PDF with better quality
+      const imgData = canvas.toDataURL('image/png'); // Use PNG for better text quality
       const pdf = new jsPDF('p', 'mm', 'a4');
       
       const imgWidth = 210; // A4 width in mm
@@ -753,6 +784,17 @@ function AppContent() {
                           >
                             <ChevronDown size={14} />
                           </button>
+                          <button
+                            onClick={() => {
+                              if (window.confirm(`Are you sure you want to delete the "${section.title}" section?`)) {
+                                deleteSection(section.id);
+                              }
+                            }}
+                            className="p-1 text-red-500 hover:text-red-700 hover:bg-red-50 rounded transition-colors"
+                            title={`Delete ${section.title} section`}
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
                       </div>
                     )
@@ -846,7 +888,7 @@ function AppContent() {
           </div>
 
           {/* AI Assistant Component */}
-          <div className="w-96 border-l border-gray-200">
+          <div className="w-96 border-l border-gray-200 h-screen flex flex-col">
             <AIAssistant
               currentDocument={currentDocument}
               onEditApply={applyEdit}
@@ -854,6 +896,7 @@ function AppContent() {
                 // Just remove the edit from the UI
                 console.log('Edit rejected:', edit);
               }}
+              className="flex-1"
             />
           </div>
         </div>

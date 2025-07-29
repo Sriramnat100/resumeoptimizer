@@ -17,6 +17,14 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
   const [formData, setFormData] = useState({});
   
   const handleAdd = () => {
+    // Validate required fields for Education
+    if (section.title === 'Education') {
+      if (!formData.school || !formData.degree || !formData.graduationDate || !formData.major) {
+        alert('Please fill in all required fields (School Name, Degree, Expected Graduation Date, and Major/Minor)');
+        return;
+      }
+    }
+    
     // Convert form data to formatted text based on section type
     const formattedContent = formatFormDataToText(section.title, formData);
     console.log('🔍 [ADD ENTRY FORM DEBUG] section.title:', section.title);
@@ -41,34 +49,34 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
   const renderEducationForm = () => (
     <div className="space-y-3">
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">School Name</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">School Name *</label>
         <input
           type="text"
           value={formData.school || ''}
           onChange={(e) => handleInputChange('school', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="e.g., University of California, Berkeley"
+          placeholder="e.g., University of Illinois, Urbana-Champaign"
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Degree</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Degree *</label>
         <input
           type="text"
           value={formData.degree || ''}
           onChange={(e) => handleInputChange('degree', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="e.g., Bachelor of Science in Computer Science"
+          placeholder="e.g., Bachelor of Science"
         />
       </div>
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Graduation Date</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Expected Graduation Date *</label>
           <input
             type="month"
             value={formData.graduationDate || ''}
             onChange={(e) => handleInputChange('graduationDate', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., 2024-05"
+            placeholder="e.g., 2027-05"
           />
         </div>
         <div>
@@ -78,18 +86,18 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
             value={formData.gpa || ''}
             onChange={(e) => handleInputChange('gpa', e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            placeholder="e.g., 3.8"
+            placeholder="e.g., 3.93"
           />
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Major/Minor</label>
+        <label className="block text-sm font-medium text-gray-700 mb-1">Major/Minor *</label>
         <input
           type="text"
           value={formData.major || ''}
           onChange={(e) => handleInputChange('major', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="e.g., Computer Science, Minor in Mathematics"
+          placeholder="e.g., Computer Science, Minor in Data Science"
         />
       </div>
       <div>
@@ -99,7 +107,7 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           onChange={(e) => handleInputChange('coursework', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows="2"
-          placeholder="e.g., Data Structures, Algorithms, Database Systems"
+          placeholder="e.g., Data Structures and Algorithms(C++), Statistical & Probabilistic Analysis(R), Data Science & Statistical Foundations (Python)"
         />
       </div>
     </div>
@@ -181,7 +189,7 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           value={formData.category || ''}
           onChange={(e) => handleInputChange('category', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="e.g., Programming Languages, Frameworks, Tools"
+          placeholder="e.g., Languages, Skills, Tools, Frameworks, Databases"
         />
       </div>
       <div>
@@ -191,7 +199,7 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           onChange={(e) => handleInputChange('skills', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           rows="3"
-          placeholder="e.g., Python, JavaScript, React, Node.js, MongoDB, AWS"
+          placeholder="Enter skills separated by commas or new lines&#10;e.g., Python, JavaScript, React&#10;or:&#10;Python&#10;JavaScript&#10;React"
         />
       </div>
     </div>

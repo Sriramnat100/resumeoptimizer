@@ -1,4 +1,4 @@
-import { formatDateRange } from './dateUtils';
+import { formatDateRange, formatDate } from './dateUtils';
 
 //A smart form that changes its fields based on the section type    
 //It should be able to handle the following section types:
@@ -15,12 +15,43 @@ export const formatFormDataToText = (sectionTitle, formData) => {
   switch (sectionTitle) {
     case 'Education':
       const educationLines = [];
-      if (formData.school) educationLines.push(formData.school);
-      if (formData.degree) educationLines.push(formData.degree);
-      if (formData.graduationDate) educationLines.push(formData.graduationDate);
-      if (formData.major) educationLines.push(`Major: ${formData.major}`);
-      if (formData.gpa) educationLines.push(`GPA: ${formData.gpa}`);
-      if (formData.coursework) educationLines.push(`\nRelevant Coursework: ${formData.coursework}`);
+      
+      // Format the first line: School name and graduation date
+      const firstLine = [];
+      if (formData.school) firstLine.push(`**${formData.school}**`);
+      if (formData.degree) firstLine.push(`(${formData.degree})`);
+      if (formData.graduationDate) {
+        const formattedDate = formatDate(formData.graduationDate, 'month-year');
+        firstLine.push(`**Expected Graduation Date:** ${formattedDate}`);
+      }
+      if (firstLine.length > 0) {
+        educationLines.push(firstLine.join(', '));
+      }
+      
+      // Format the second line: Major, Minor, GPA
+      const secondLine = [];
+      if (formData.major) {
+        const majorParts = formData.major.split(',');
+        if (majorParts.length >= 2) {
+          // If major contains comma, assume it's "Major, Minor" format
+          secondLine.push(`**Major:** ${majorParts[0].trim()}`);
+          if (majorParts[1].trim()) {
+            secondLine.push(`**Minor:** ${majorParts[1].trim()}`);
+          }
+        } else {
+          secondLine.push(`**Major:** ${formData.major}`);
+        }
+      }
+      if (formData.gpa) secondLine.push(`**GPA:** ${formData.gpa}/4.0`);
+      if (secondLine.length > 0) {
+        educationLines.push(secondLine.join(', '));
+      }
+      
+      // Format the third line: Relevant Coursework
+      if (formData.coursework) {
+        educationLines.push(`**Relevant Coursework:** ${formData.coursework}`);
+      }
+      
       return educationLines.join('\n');
     
     case 'Experience':
@@ -41,7 +72,9 @@ export const formatFormDataToText = (sectionTitle, formData) => {
     
     case 'Skills':
       if (formData.category && formData.skills) {
-        return `${formData.category}:\n${formData.skills}`;
+        // Format skills as comma-separated list on same line
+        const skillsList = formData.skills.split('\n').map(skill => skill.trim()).filter(skill => skill).join(', ');
+        return `${formData.category}: ${skillsList}`;
       } else if (formData.skills) {
         return formData.skills;
       }

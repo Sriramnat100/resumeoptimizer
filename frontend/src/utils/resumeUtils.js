@@ -7,6 +7,19 @@ export const formatResumeContent = (text) => {
   if (!text) return [];
   
   return text.split('\n').map((line, index) => {
+    // Handle Skills section category: skills format
+    const skillsPattern = /^([A-Za-z]+):\s*(.+)$/;
+    const skillsMatch = line.trim().match(skillsPattern);
+    
+    if (skillsMatch) {
+      const [, category, skills] = skillsMatch;
+      return (
+        <div key={index} className="mb-1">
+          <span className="font-semibold">{category}:</span> {formatInlineText(skills.trim())}
+        </div>
+      );
+    }
+    
     // Handle bullet points
     if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
       return (
@@ -129,20 +142,33 @@ const formatInlineText = (text) => {
 };
 
 /**
+ * Converts formatted text back to markdown format for editing
+ * @param {string} text - The text to convert
+ * @returns {string} Text in markdown format
+ */
+export const convertToMarkdown = (text) => {
+  if (!text) return '';
+  
+  // Convert bold text back to markdown format
+  // This is a simple conversion - in a real app you might want more sophisticated parsing
+  return text;
+};
+
+/**
  * Gets the default content for a resume section
  * @param {string} title - The section title
  * @returns {string} Default content for the section
  */
 export const getDefaultContent = (title) => {
   const defaults = {
-    'Personal Information': 'YOUR NAME\nEmail • Phone • Location • LinkedIn',
-    'Skills': '• Python (Intermediate)\n• JavaScript (Advanced)\n• React (Intermediate)\n• Node.js (Beginner)\n• MongoDB (Beginner)',
-    'Education': '**UNIVERSITY NAME**\nBachelor of Science in Computer Science\nGraduation Date: May 2024\nGPA: 3.8/4.0',
-    'Experience': '**MOST RECENT EMPLOYER**, City, State (Achievement)\nPosition Title                    Jun 2023 - Present\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text',
-    'Projects': '**PROJECT NAME** - Full Stack Web Application\n• Built a responsive web app using React, Node.js, and MongoDB\n• Implemented user authentication and real-time data updates\n• Deployed on AWS with CI/CD pipeline',
-    'Leadership & Community': '**ORGANIZATION NAME**, City, State (Achievement)\nPosition Title                    Sep 2023 - Present\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text',
-    'Awards & Honors': '• Dean\'s List - All Semesters\n• Outstanding Student Award - Computer Science Department\n• Hackathon Winner - University Tech Competition',
-    'Certifications': '• AWS Certified Developer Associate\n• Google Cloud Professional Developer\n• Microsoft Azure Fundamentals'
+    'Personal Information': '**YOUR NAME**\nYour Number | youremail@address.com | Location | Your Website',
+    'Skills': 'Languages: Python, Java, C++, JavaScript\nSkills: AWS, React, SQL, MongoDB, Node.js\nTools: Git, Docker, Jenkins, VS Code',
+    'Education': '**Your School**, (Degree Name ex Bachelor of Science)                                        **Expected Graduation Date:** Month Year\n**Major:** (Ex: Computer Science), **Minor:** Certificate or Minor in, **GPA:** Out of 4.0\n**Relevant Coursework**: (Optional, only list a couple of the most relevant courses taken)',
+    'Experience': '**MOST RECENT EMPLOYER**, Position Title                                                                                     Month Year - Present\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text\n\n**PREVIOUS EMPLOYER**, Position Title                                                                                       Month Year - Month Year\n**Position Title**\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text',
+    'Projects': '**PROJECT NAME**                                                                                                                           Month Year - Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest, including awards/accomplishments/outcomes achieved based on some bullet point format from experience)\n• Text\n\n**ANOTHER PROJECT NAME**                                                                                                      Month Year - Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest)\n• Text',
+    'Leadership & Community': '**ORGANIZATION**, Position Title                                                                                                    Month Year - Month Year\n**Position Title**\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text',
+    'Awards & Honors': '**ORGANIZATION**                                                                                                                           Month Year - Month Year\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text',
+    'Certifications': '[Certification Name] | [Issuing Organization] | [Date Earned]\n[Certification ID or Credential Number]\n\n[Another Certification] | [Organization] | [Date]\n[Credential details]'
   };
   
   return defaults[title] || 'Enter your content here...';

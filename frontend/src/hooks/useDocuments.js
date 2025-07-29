@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import documentService from '../services/documentService';
 import { formatDate } from '../utils/dateUtils';
+import { getDefaultContent } from '../utils/resumeUtils';
 
 export const useDocuments = () => {
   const [documents, setDocuments] = useState([]);
@@ -216,6 +217,25 @@ export const useDocuments = () => {
     }
   };
 
+  // Helper function to check if content is just placeholder text
+  const isPlaceholderContent = (content, sectionTitle) => {
+    if (!content || content.trim() === '') return true;
+    
+    // Get the exact default content for this section
+    const defaultContent = getDefaultContent(sectionTitle);
+    
+    // Check if the content matches the default content exactly (allowing for minor whitespace differences)
+    const normalizedContent = content.trim().replace(/\s+/g, ' ');
+    const normalizedDefault = defaultContent.trim().replace(/\s+/g, ' ');
+    
+    console.log('🔍 [PLACEHOLDER DEBUG] Section:', sectionTitle);
+    console.log('🔍 [PLACEHOLDER DEBUG] Current content:', normalizedContent);
+    console.log('🔍 [PLACEHOLDER DEBUG] Default content:', normalizedDefault);
+    console.log('🔍 [PLACEHOLDER DEBUG] Content matches default:', normalizedContent === normalizedDefault);
+    
+    return normalizedContent === normalizedDefault;
+  };
+
   const addNewEntry = (sectionId, newEntry) => {
     console.log('🔍 [ADD NEW ENTRY DEBUG] addNewEntry called with:', { sectionId, newEntry });
     console.log('🔍 [ADD NEW ENTRY DEBUG] currentDocument exists:', !!currentDocument);
@@ -234,7 +254,12 @@ export const useDocuments = () => {
         console.log('🔍 [ADD NEW ENTRY DEBUG] Current content length:', currentContent.length);
         console.log('🔍 [ADD NEW ENTRY DEBUG] Current content preview:', currentContent.substring(0, 100));
         
-        const newContent = currentContent + '\n\n' + newEntry;
+        // Check if current content is just placeholder text
+        const isPlaceholder = isPlaceholderContent(currentContent, section.title);
+        console.log('🔍 [ADD NEW ENTRY DEBUG] Is placeholder content:', isPlaceholder);
+        
+        // If it's placeholder content, replace it entirely; otherwise append
+        const newContent = isPlaceholder ? newEntry : currentContent + '\n\n' + newEntry;
         console.log('🔍 [ADD NEW ENTRY DEBUG] New content length:', newContent.length);
         console.log('🔍 [ADD NEW ENTRY DEBUG] New content preview:', newContent.substring(0, 100));
         
@@ -312,6 +337,35 @@ export const useDocuments = () => {
     }
   };
 
+  // Delete a section from the current document
+  const deleteSection = (sectionId) => {
+    console.log('🗑️ [DELETE SECTION DEBUG] deleteSection called with sectionId:', sectionId);
+    
+    if (!currentDocument) {
+      console.log('🗑️ [DELETE SECTION DEBUG] No currentDocument, returning early');
+      return;
+    }
+    
+    // Don't allow deleting Personal Information section
+    const sectionToDelete = currentDocument.sections.find(s => s.id === sectionId);
+    if (sectionToDelete && sectionToDelete.title === 'Personal Information') {
+      console.log('🗑️ [DELETE SECTION DEBUG] Cannot delete Personal Information section');
+      alert('Cannot delete Personal Information section');
+      return;
+    }
+    
+    console.log('🗑️ [DELETE SECTION DEBUG] Current sections:', currentDocument.sections.map(s => ({ id: s.id, title: s.title })));
+    
+    const updatedSections = currentDocument.sections.filter(section => section.id !== sectionId);
+    console.log('🗑️ [DELETE SECTION DEBUG] Updated sections:', updatedSections.map(s => ({ id: s.id, title: s.title })));
+    
+    setCurrentDocument({
+      ...currentDocument,
+      sections: updatedSections
+    });
+    console.log('🗑️ [DELETE SECTION DEBUG] CurrentDocument updated');
+  };
+
   // Utility functions
   const getAddButtonText = (title) => {
     return documentService.getAddButtonText(title);
@@ -350,6 +404,7 @@ export const useDocuments = () => {
     moveSectionUp,
     moveSectionDown,
     addNewEntry,
+    deleteSection,
     
     // Utility functions
     getResumeContext,

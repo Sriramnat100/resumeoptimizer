@@ -116,6 +116,14 @@ FORMAT REQUIREMENTS - EXTREMELY IMPORTANT:
 - If no edits are needed, return empty "edits" array: {"edits": []}
 - SECTION NAMES MUST BE EXACT: Use "Skills", "Experience", "Education", "Projects", "Leadership & Community", "Awards & Honors", "Certifications", "Personal Information"
 
+SKILLS SECTION FORMAT - CRITICAL:
+- Skills section uses category: skills format (e.g., "Languages: Python, Java, C++")
+- Each category should be on its own line
+- Skills within a category are comma-separated
+- Common categories: Languages, Skills, Tools, Frameworks, Databases
+- Do NOT use bullet points for Skills section
+- Format: "Category: skill1, skill2, skill3"
+
 EXACT JSON FORMAT:
 {
   "edits": [

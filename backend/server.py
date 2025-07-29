@@ -206,43 +206,43 @@ def get_default_sections():
         {
             "id": str(uuid.uuid4()),
             "title": "Personal Information",
-            "content": {"text": "YOUR NAME\nYour Number | youremail@address.com | Location | Your Website"},
+            "content": {"text": "**YOUR NAME**\nYour Number | youremail@address.com | Location | Your Website"},
             "order": 1
         },
         {
             "id": str(uuid.uuid4()),
             "title": "Skills",
-            "content": {"text": "• Python (Intermediate)\n• JavaScript (Native)\n• React (Advanced)\n• Node.js (Intermediate)\n• MongoDB (Beginner)"},
+            "content": {"text": "Languages: Python, Java, C++, JavaScript\nSkills: AWS, React, SQL, MongoDB, Node.js\nTools: Git, Docker, Jenkins, VS Code"},
             "order": 2
         },
         {
             "id": str(uuid.uuid4()),
             "title": "Education",
-            "content": {"text": "Your School, (Degree Name ex Bachelor of Science)                    (Anticipated graduation date) Month\nYear\nMajor:        Certificate or Minor in\nGPA: (only write out if is decent and between 3.25 or 3.5+)\n\nRelevant Coursework: (Optional, only list a couple of the most relevant courses taken)"},
+            "content": {"text": "**Your School**, (Degree Name ex Bachelor of Science)                                        **Expected Graduation Date:** Month Year\n**Major:** (Ex: Computer Science), **Minor:** Certificate or Minor in, **GPA:** Out of 4.0\n**Relevant Coursework**: (Optional, only list a couple of the most relevant courses taken)"},
             "order": 3
         },
         {
             "id": str(uuid.uuid4()),
             "title": "Experience",
-            "content": {"text": "MOST RECENT EMPLOYER, City, State (Achievement)                    Month Year - Present\nPosition Title\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text\n\nPREVIOUS EMPLOYER, City, State (Achievement)                    Month Year - Month Year\nPosition Title\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text"},
+            "content": {"text": "**MOST RECENT EMPLOYER**, Position Title                                                                                     Month Year - Present\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text\n\n**PREVIOUS EMPLOYER**, Position Title                                                                                       Month Year - Month Year\n**Position Title**\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text"},
             "order": 4
         },
         {
             "id": str(uuid.uuid4()),
             "title": "Projects",
-            "content": {"text": "PROJECT NAME                                                        Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest, including awards/accomplishments/outcomes achieved based on some bullet point format from experience)\n• Text\n\nANOTHER PROJECT NAME                                                Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest)\n• Text"},
+            "content": {"text": "**PROJECT NAME**                                                                                                                           Month Year - Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest, including awards/accomplishments/outcomes achieved based on some bullet point format from experience)\n• Text\n\n**ANOTHER PROJECT NAME**                                                                                                      Month Year - Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest)\n• Text"},
             "order": 5
         },
         {
             "id": str(uuid.uuid4()),
             "title": "Leadership & Community",
-            "content": {"text": "ORGANIZATION                                                        Month Year - Month Year\nPosition Title\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text"},
+            "content": {"text": "**ORGANIZATION**, Position Title                                                                                                    Month Year - Month Year\n**Position Title**\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text"},
             "order": 6
         },
         {
             "id": str(uuid.uuid4()),
             "title": "Awards & Honors",
-            "content": {"text": "ORGANIZATION                                                        Month Year - Month Year\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text"},
+            "content": {"text": "**ORGANIZATION**                                                                                                                           Month Year - Month Year\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text"},
             "order": 7
         },
         {
