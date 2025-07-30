@@ -16,31 +16,30 @@ export const formatFormDataToText = (sectionTitle, formData) => {
     case 'Education':
       const educationLines = [];
       
-      // Format the first line: School name and graduation date
-      const firstLine = [];
-      if (formData.school) firstLine.push(`**${formData.school}**`);
-      if (formData.degree) firstLine.push(`(${formData.degree})`);
-      if (formData.graduationDate) {
-        const formattedDate = formatDate(formData.graduationDate, 'month-year');
-        firstLine.push(`**Expected Graduation Date:** ${formattedDate}`);
-      }
-      if (firstLine.length > 0) {
-        educationLines.push(firstLine.join(', '));
+      // Format the first line: School name and degree (left), graduation date (right)
+      if (formData.school || formData.degree) {
+        const leftSide = [];
+        if (formData.school) leftSide.push(`**${formData.school}**`);
+        if (formData.degree) leftSide.push(`(${formData.degree})`);
+        
+        let firstLine = leftSide.join(', ');
+        
+        // Add graduation date on the right if available
+        if (formData.graduationDate) {
+          const formattedDate = formatDate(formData.graduationDate, 'month-year');
+          firstLine = `${firstLine} **Expected Graduation Date:** ${formattedDate}`;
+        }
+        
+        educationLines.push(firstLine);
       }
       
       // Format the second line: Major, Minor, GPA
       const secondLine = [];
       if (formData.major) {
-        const majorParts = formData.major.split(',');
-        if (majorParts.length >= 2) {
-          // If major contains comma, assume it's "Major, Minor" format
-          secondLine.push(`**Major:** ${majorParts[0].trim()}`);
-          if (majorParts[1].trim()) {
-            secondLine.push(`**Minor:** ${majorParts[1].trim()}`);
-          }
-        } else {
-          secondLine.push(`**Major:** ${formData.major}`);
-        }
+        secondLine.push(`**Major:** ${formData.major}`);
+      }
+      if (formData.minor) {
+        secondLine.push(`**Minor:** ${formData.minor}`);
       }
       if (formData.gpa) secondLine.push(`**GPA:** ${formData.gpa}/4.0`);
       if (secondLine.length > 0) {
@@ -82,10 +81,17 @@ export const formatFormDataToText = (sectionTitle, formData) => {
     
     case 'Projects':
       const projectLines = [];
-      if (formData.projectName) projectLines.push(formData.projectName);
-      if (formData.technologies) projectLines.push(`Technologies: ${formData.technologies}`);
+      const projectInfo = [];
+      if (formData.projectName) projectInfo.push(`**${formData.projectName}**`);
+      if (formData.startDate && formData.endDate) {
+        projectInfo.push(formatDateRange(formData.startDate, formData.endDate));
+      } else if (formData.startDate) {
+        projectInfo.push(formatDateRange(formData.startDate));
+      }
+      if (projectInfo.length > 0) {
+        projectLines.push(projectInfo.join(', '));
+      }
       if (formData.description) projectLines.push(formData.description);
-      if (formData.features) projectLines.push(formData.features);
       return projectLines.join('\n');
     
     case 'Leadership & Community':

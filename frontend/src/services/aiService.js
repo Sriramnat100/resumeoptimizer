@@ -5,12 +5,15 @@
 
 import { parseAiResponse, generateFallbackResponse } from '../utils/aiUtils';
 import { getDefaultContent } from '../utils/resumeUtils';
+import promptService from './promptService';
+import { analyzeJobDescription } from '../utils/jobDescriptionUtils';
 
 class AIService {
   constructor() {
     this.apiKey = process.env.REACT_APP_GEMINI_API_KEY;
     this.baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
     this.isAvailable = !!this.apiKey;
+    this.currentJobDescription = null; // Store current job description
   }
 
   /**
@@ -68,6 +71,20 @@ class AIService {
       throw new Error('Message cannot be empty');
     }
 
+    // Check if this is a job description
+    const jobAnalysis = analyzeJobDescription(message);
+    console.log('🔍 [AI SERVICE] Job analysis result:', jobAnalysis);
+    
+    if (jobAnalysis.isJobDescription) {
+      console.log('📋 [AI SERVICE] Job description detected!');
+      this.currentJobDescription = jobAnalysis.parsed;
+      
+      return {
+        message: `✅ Job description saved! I'll use this to tailor my advice.\n\nKey points:\n${jobAnalysis.advice}`,
+        edits: []
+      };
+    }
+
     // Check if AI service is available
     if (!this.isServiceAvailable()) {
       console.log('⚠️ [AI SERVICE] No API key available, using fallback');
@@ -85,25 +102,40 @@ class AIService {
       console.log('🤖 [AI SERVICE] resumeContext received:', resumeContext);
       console.log('🤖 [AI SERVICE] resumeContext length:', resumeContext.length);
       
+      // Build prompt using the prompt service with job context
+      const prompt = promptService.buildPrompt(message, currentDocument, null, this.currentJobDescription);
+      
       // Prepare request payload
       const requestPayload = {
         contents: [
           {
             parts: [
               {
-                text: `You are a professional resume writing assistant. You have access to the user's current resume content below.
-
-CURRENT RESUME CONTENT:
-${resumeContext}
-
-USER QUESTION: ${message}
+                text: prompt + `
 
 CRITICAL INSTRUCTIONS - FOLLOW EXACTLY:
 1. Provide helpful advice in your response
 2. If you can suggest specific improvements, you MUST include them in this EXACT JSON format at the very end of your response
+3. CRITICAL: Your response MUST be complete and the JSON MUST be properly closed
 
-FORMAT REQUIREMENTS - EXTREMELY IMPORTANT:
-- Put the JSON on a NEW LINE after your advice
+RESPONSE STRUCTURE (MANDATORY):
+- First: Provide your advice and suggestions (focus ONLY on the section asked about)
+- Then: Add a blank line
+- Finally: Include the COMPLETE JSON (must end with } and be valid)
+
+CONCISENESS RULES - EXTREMELY IMPORTANT:
+- Keep each recommendation under 225 characters
+- Be direct and to the point
+- Avoid unnecessary explanations
+- Focus on actionable feedback
+- Use bullet points for clarity
+
+FOCUS RULE - EXTREMELY IMPORTANT:
+- If user asks about a specific section, ONLY provide feedback for that section
+- Do NOT suggest changes to other sections unless explicitly asked
+- Stay focused on the user's specific question
+
+JSON REQUIREMENTS - EXTREMELY IMPORTANT:
 - The JSON must be at the very end of your response
 - NO text after the closing brace }
 - NO text on the same line as the JSON
@@ -115,16 +147,18 @@ FORMAT REQUIREMENTS - EXTREMELY IMPORTANT:
 - Only include edits if you can make specific, actionable improvements
 - If no edits are needed, return empty "edits" array: {"edits": []}
 - SECTION NAMES MUST BE EXACT: Use "Skills", "Experience", "Education", "Projects", "Leadership & Community", "Awards & Honors", "Certifications", "Personal Information"
+- Keep "reason" field under 225 characters
+- Be concise in all text fields
 
 SKILLS SECTION FORMAT - CRITICAL:
-- Skills section uses category: skills format (e.g., "Languages: Python, Java, C++")
+- Skills section uses category: skills format (e.g., "Languages: Python, Java, C++, (New Line) Skills: AWS, React, SQL, MongoDB, Node.js")
 - Each category should be on its own line
 - Skills within a category are comma-separated
 - Common categories: Languages, Skills, Tools, Frameworks, Databases
 - Do NOT use bullet points for Skills section
 - Format: "Category: skill1, skill2, skill3"
 
-EXACT JSON FORMAT:
+COMPLETE JSON FORMAT (MUST END WITH THIS - NO EXCEPTIONS):
 {
   "edits": [
     {
@@ -135,13 +169,16 @@ EXACT JSON FORMAT:
       "reason": "explanation of the change"
     }
   ]
-}`              }
+}`
+              }
             ]
           }
         ],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 1000,
+          maxOutputTokens: 3000,
+          topP: 0.8,
+          topK: 40
         }
       };
 

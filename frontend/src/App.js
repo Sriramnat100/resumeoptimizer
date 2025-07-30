@@ -34,6 +34,7 @@ function AppContent() {
     newDocumentLabel,
     fetchDocuments,
     createDocument,
+    createDocumentFromTemplate,
     saveDocument,
     deleteDocument,
     setNewDocumentTitle,
@@ -394,7 +395,13 @@ function AppContent() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     onKeyPress={async (e) => {
                       if (e.key === 'Enter') {
-                        await createDocument();
+                        if (newDocumentLabel) {
+                          // If a label is selected, create from template
+                          await createDocumentFromTemplate(newDocumentLabel);
+                        } else {
+                          // If no label, create regular document
+                          await createDocument();
+                        }
                         setCurrentView('editor');
                       }
                     }}
@@ -421,13 +428,19 @@ function AppContent() {
                   <div className="flex gap-3">
                     <button
                       onClick={async () => {
-                        await createDocument();
+                        if (newDocumentLabel) {
+                          // If a label is selected, create from template
+                          await createDocumentFromTemplate(newDocumentLabel);
+                        } else {
+                          // If no label, create regular document
+                          await createDocument();
+                        }
                         setCurrentView('editor');
                       }}
                       disabled={!newDocumentTitle.trim() || loading}
                       className="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 disabled:bg-gray-400 transition-colors font-medium"
                     >
-                      Create
+                      {newDocumentLabel ? 'Create from Template' : 'Create'}
                     </button>
                     <button
                       onClick={() => {

@@ -20,7 +20,7 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
     // Validate required fields for Education
     if (section.title === 'Education') {
       if (!formData.school || !formData.degree || !formData.graduationDate || !formData.major) {
-        alert('Please fill in all required fields (School Name, Degree, Expected Graduation Date, and Major/Minor)');
+        alert('Please fill in all required fields (School Name, Degree, Expected Graduation Date, and Major)');
         return;
       }
     }
@@ -90,15 +90,27 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           />
         </div>
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Major/Minor *</label>
-        <input
-          type="text"
-          value={formData.major || ''}
-          onChange={(e) => handleInputChange('major', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="e.g., Computer Science, Minor in Data Science"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Major *</label>
+          <input
+            type="text"
+            value={formData.major || ''}
+            onChange={(e) => handleInputChange('major', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., Computer Science"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Minor (Optional)</label>
+          <input
+            type="text"
+            value={formData.minor || ''}
+            onChange={(e) => handleInputChange('minor', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., Data Science"
+          />
+        </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Relevant Coursework (Optional)</label>
@@ -109,6 +121,15 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           rows="2"
           placeholder="e.g., Data Structures and Algorithms(C++), Statistical & Probabilistic Analysis(R), Data Science & Statistical Foundations (Python)"
         />
+      </div>
+      <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-4">
+        <h4 className="text-sm font-medium text-blue-800 mb-2">💡 Formatting Tips:</h4>
+        <ul className="text-xs text-blue-700 space-y-1">
+          <li>• School name will be bolded automatically</li>
+          <li>• Graduation date will be right-aligned</li>
+          <li>• Major, Minor, and GPA will be formatted with labels</li>
+          <li>• Relevant coursework is optional but recommended</li>
+        </ul>
       </div>
     </div>
   );
@@ -158,16 +179,6 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Location</label>
-        <input
-          type="text"
-          value={formData.location || ''}
-          onChange={(e) => handleInputChange('location', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="e.g., San Francisco, CA"
-        />
-      </div>
-      <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Key Achievements</label>
         <textarea
           value={formData.achievements || ''}
@@ -176,6 +187,16 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           rows="4"
           placeholder="• Led development of new feature that increased user engagement by 25%&#10;• Mentored 3 junior developers and improved team productivity&#10;• Optimized database queries reducing load times by 40%"
         />
+      </div>
+      <div className="bg-green-50 border border-green-200 rounded-md p-3 mt-4">
+        <h4 className="text-sm font-medium text-green-800 mb-2">💡 Formatting Tips:</h4>
+        <ul className="text-xs text-green-700 space-y-1">
+          <li>• Company name and job title will be bolded automatically</li>
+          <li>• Dates will be right-aligned</li>
+          <li>• Use bullet points (•) for achievements</li>
+          <li>• Start with strong action verbs (Led, Developed, Implemented)</li>
+          <li>• Include quantifiable results when possible</li>
+        </ul>
       </div>
     </div>
   );
@@ -202,6 +223,15 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           placeholder="Enter skills separated by commas or new lines&#10;e.g., Python, JavaScript, React&#10;or:&#10;Python&#10;JavaScript&#10;React"
         />
       </div>
+      <div className="bg-orange-50 border border-orange-200 rounded-md p-3 mt-4">
+        <h4 className="text-sm font-medium text-orange-800 mb-2">💡 Formatting Tips:</h4>
+        <ul className="text-xs text-orange-700 space-y-1">
+          <li>• Skills will be grouped by category</li>
+          <li>• Multiple skills will be separated by commas</li>
+          <li>• Common categories: Languages, Tools, Frameworks</li>
+          <li>• List most relevant skills first</li>
+        </ul>
+      </div>
     </div>
   );
 
@@ -217,15 +247,27 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           placeholder="e.g., E-commerce Platform"
         />
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Technologies Used</label>
-        <input
-          type="text"
-          value={formData.technologies || ''}
-          onChange={(e) => handleInputChange('technologies', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          placeholder="e.g., React, Node.js, MongoDB, AWS"
-        />
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
+          <input
+            type="month"
+            value={formData.startDate || ''}
+            onChange={(e) => handleInputChange('startDate', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., 2023-09"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
+          <input
+            type="month"
+            value={formData.endDate || ''}
+            onChange={(e) => handleInputChange('endDate', e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            placeholder="e.g., 2024-12"
+          />
+        </div>
       </div>
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Project Description</label>
@@ -233,19 +275,19 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           value={formData.description || ''}
           onChange={(e) => handleInputChange('description', e.target.value)}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows="3"
-          placeholder="Brief description of the project and your role"
+          rows="4"
+          placeholder="• Developed a full-stack e-commerce platform with user authentication&#10;• Implemented payment processing and order management system&#10;• Built responsive UI with modern design patterns&#10;• Deployed application using cloud infrastructure"
         />
       </div>
-      <div>
-        <label className="block text-sm font-medium text-gray-700 mb-1">Key Features/Achievements</label>
-        <textarea
-          value={formData.features || ''}
-          onChange={(e) => handleInputChange('features', e.target.value)}
-          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-          rows="3"
-          placeholder="• Implemented user authentication and authorization&#10;• Built responsive UI with React and Tailwind CSS&#10;• Deployed to AWS with CI/CD pipeline"
-        />
+      <div className="bg-purple-50 border border-purple-200 rounded-md p-3 mt-4">
+        <h4 className="text-sm font-medium text-purple-800 mb-2">💡 Formatting Tips:</h4>
+        <ul className="text-xs text-purple-700 space-y-1">
+          <li>• Project name will be bolded automatically</li>
+          <li>• Dates will be right-aligned</li>
+          <li>• Use bullet points (•) for project description</li>
+          <li>• Focus on your role and technical skills used</li>
+          <li>• Include outcomes and impact of the project</li>
+        </ul>
       </div>
     </div>
   );
@@ -304,6 +346,16 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           placeholder="• Led team of 15 members in organizing tech events&#10;• Increased membership by 40% through outreach programs&#10;• Coordinated with faculty for curriculum improvements"
         />
       </div>
+      <div className="bg-indigo-50 border border-indigo-200 rounded-md p-3 mt-4">
+        <h4 className="text-sm font-medium text-indigo-800 mb-2">💡 Formatting Tips:</h4>
+        <ul className="text-xs text-indigo-700 space-y-1">
+          <li>• Organization and position will be bolded automatically</li>
+          <li>• Dates will be right-aligned</li>
+          <li>• Use bullet points (•) for responsibilities</li>
+          <li>• Focus on leadership and impact</li>
+          <li>• Include team size and achievements</li>
+        </ul>
+      </div>
     </div>
   );
 
@@ -349,6 +401,15 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           placeholder="Brief description of the award criteria or significance"
         />
       </div>
+      <div className="bg-yellow-50 border border-yellow-200 rounded-md p-3 mt-4">
+        <h4 className="text-sm font-medium text-yellow-800 mb-2">💡 Formatting Tips:</h4>
+        <ul className="text-xs text-yellow-700 space-y-1">
+          <li>• Award name and organization will be formatted with separators</li>
+          <li>• Date will be formatted as Month Year</li>
+          <li>• Include brief description of the award</li>
+          <li>• Focus on prestigious or relevant awards</li>
+        </ul>
+      </div>
     </div>
   );
 
@@ -393,6 +454,15 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
           placeholder="e.g., AWS-123456789"
         />
+      </div>
+      <div className="bg-teal-50 border border-teal-200 rounded-md p-3 mt-4">
+        <h4 className="text-sm font-medium text-teal-800 mb-2">💡 Formatting Tips:</h4>
+        <ul className="text-xs text-teal-700 space-y-1">
+          <li>• Certification name and organization will be formatted with separators</li>
+          <li>• Date will be formatted as Month Year</li>
+          <li>• Include credential ID if available</li>
+          <li>• Focus on industry-recognized certifications</li>
+        </ul>
       </div>
     </div>
   );
@@ -449,6 +519,15 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
           placeholder="e.g., linkedin.com/in/johndoe"
         />
       </div>
+      <div className="bg-gray-50 border border-gray-200 rounded-md p-3 mt-4">
+        <h4 className="text-sm font-medium text-gray-800 mb-2">💡 Formatting Tips:</h4>
+        <ul className="text-xs text-gray-700 space-y-1">
+          <li>• Your name will be bolded automatically</li>
+          <li>• Contact info will be separated by pipes (|)</li>
+          <li>• Include phone, email, location, and website</li>
+          <li>• Keep it professional and concise</li>
+        </ul>
+      </div>
     </div>
   );
 
@@ -472,12 +551,23 @@ const AddEntryForm = ({ section, onAdd, onCancel }) => {
         return renderPersonalInfoForm();
       default:
         return (
-          <textarea
-            value={formData.content || ''}
-            onChange={(e) => handleInputChange('content', e.target.value)}
-            className="w-full h-24 p-3 border border-blue-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
-            placeholder={`Enter new ${section.title.toLowerCase()}...`}
-          />
+          <div className="space-y-3">
+            <textarea
+              value={formData.content || ''}
+              onChange={(e) => handleInputChange('content', e.target.value)}
+              className="w-full h-24 p-3 border border-blue-300 rounded resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              placeholder={`Enter new ${section.title.toLowerCase()}...`}
+            />
+            <div className="bg-blue-50 border border-blue-200 rounded-md p-3 mt-4">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">💡 Formatting Tips:</h4>
+              <ul className="text-xs text-blue-700 space-y-1">
+                <li>• Use bullet points (•) for lists</li>
+                <li>• Use **text** for bold formatting</li>
+                <li>• Keep content concise and professional</li>
+                <li>• Focus on relevant information for this section</li>
+              </ul>
+            </div>
+          </div>
         );
     }
   };

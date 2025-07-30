@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { formatResumeContent, getDefaultContent } from '../utils/resumeUtils';
+import { formatResumeContent, getDefaultContent, formatInlineText } from '../utils/resumeUtils';
 import AddEntryForm from './AddEntryForm';
 
 const ResumeSection = ({ 
@@ -28,8 +28,8 @@ const ResumeSection = ({
           onClick={() => onEdit(section.id)}
           title="Click to edit"
         >
-          <div className="name">{lines[0] || 'YOUR NAME'}</div>
-          <div className="contact-info">{lines[1] || 'Contact Information'}</div>
+          <div className="name">{formatInlineText(lines[0] || 'YOUR NAME')}</div>
+          <div className="contact-info">{formatInlineText(lines[1] || 'Contact Information')}</div>
         </div>
       </div>
     );

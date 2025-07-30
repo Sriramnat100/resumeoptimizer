@@ -142,10 +142,11 @@ class DocumentVersion(BaseModel):
     created_at: datetime = Field(default_factory=datetime.utcnow)
     description: Optional[str] = None
 
-# Update CreateDocumentRequest to include label
+# Update CreateDocumentRequest to include label and sections
 class CreateDocumentRequest(BaseModel):
     title: str
-    label: Optional[str] = None  # Add this line
+    label: Optional[str] = None
+    sections: Optional[List[DocumentSection]] = None
     
 class UpdateDocumentRequest(BaseModel):
     title: Optional[str] = None
@@ -212,7 +213,7 @@ def get_default_sections():
         {
             "id": str(uuid.uuid4()),
             "title": "Skills",
-            "content": {"text": "Languages: Python, Java, C++, JavaScript\nSkills: AWS, React, SQL, MongoDB, Node.js\nTools: Git, Docker, Jenkins, VS Code"},
+            "content": {"text": "Languages: Python, Java, C++, JavaScript\nSkills: AWS, React, SQL, MongoDB, Node.js"},
             "order": 2
         },
         {
@@ -224,7 +225,7 @@ def get_default_sections():
         {
             "id": str(uuid.uuid4()),
             "title": "Experience",
-            "content": {"text": "**MOST RECENT EMPLOYER**, Position Title                                                                                     Month Year - Present\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text\n\n**PREVIOUS EMPLOYER**, Position Title                                                                                       Month Year - Month Year\n**Position Title**\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text"},
+            "content": {"text": "**MOST RECENT EMPLOYER**, Position Title                                                                                     Month Year - Present\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text\n\n**PREVIOUS EMPLOYER**, Position Title                                                                                       Month Year - Month Year\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text"},
             "order": 4
         },
         {
@@ -236,7 +237,7 @@ def get_default_sections():
         {
             "id": str(uuid.uuid4()),
             "title": "Leadership & Community",
-            "content": {"text": "**ORGANIZATION**, Position Title                                                                                                    Month Year - Month Year\n**Position Title**\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text"},
+            "content": {"text": "**ORGANIZATION**, Position Title                                                                                                    Month Year - Month Year\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text"},
             "order": 6
         },
         {
@@ -374,10 +375,13 @@ async def create_document(request: CreateDocumentRequest, current_user: dict = D
                 raise HTTPException(status_code=400, detail="Invalid label")
             print(f"✅ Label validated: {label}")
         
+        # Use provided sections or default sections
+        sections = request.sections if request.sections else get_default_sections()
+        
         document_data = {
             "id": str(uuid.uuid4()),
             "title": request.title,
-            "sections": get_default_sections(),
+            "sections": [section.dict() if hasattr(section, 'dict') else section for section in sections],
             "label": request.label,
             "user_id": current_user["id"],
             "created_at": datetime.utcnow(),

@@ -12,13 +12,31 @@ export const parseAiResponse = (aiText) => {
   
   try {
     // Check if response seems truncated
-    const seemsTruncated = aiText.endsWith('{') || aiText.endsWith(',') || aiText.endsWith('[') || !aiText.trim().endsWith('}');
+    const seemsTruncated = aiText.endsWith('{') || aiText.endsWith(',') || aiText.endsWith('[') || 
+                           !aiText.trim().endsWith('}') || 
+                           aiText.includes('⚠️ Response was truncated') ||
+                           aiText.includes('incomplete') ||
+                           aiText.includes('JSON was cut off') ||
+                           aiText.includes('⚠️ Response was incomplete') ||
+                           aiText.includes('JSON was malformed') ||
+                           aiText.includes('JSON response was incomplete') ||
+                           aiText.includes('JSON response was malformed');
     
     if (seemsTruncated) {
-      console.log('⚠️ [PARSE DEBUG] AI response appears truncated:', aiText.slice(-50));
+      console.log('⚠️ [PARSE DEBUG] AI response appears truncated:', aiText.slice(-100));
       return { 
-        message: aiText + "\n\n⚠️ Response was truncated. Please try asking again for complete suggestions.", 
+        message: aiText + "\n\n⚠️ Response was incomplete. Please try asking again for complete suggestions.", 
         edits: [] 
+      };
+    }
+    
+    // Check for overly verbose responses
+    const messageWithoutJson = aiText.replace(/\{[\s\S]*\}/, '').trim();
+    if (messageWithoutJson.length > 1000) {
+      console.log('⚠️ [PARSE DEBUG] Response is too verbose:', messageWithoutJson.length, 'characters');
+      return {
+        message: "Response was too verbose. Please provide more concise feedback.",
+        edits: []
       };
     }
 
@@ -37,8 +55,18 @@ export const parseAiResponse = (aiText) => {
       const closeBrackets = (jsonString.match(/\]/g) || []).length;
       
       if (openBraces !== closeBraces || openBrackets !== closeBrackets) {
+        console.log('⚠️ [PARSE DEBUG] JSON brackets/braces mismatch:', { openBraces, closeBraces, openBrackets, closeBrackets });
         return { 
-          message: aiText + "\n\n⚠️ Suggestions were incomplete. Please try again.", 
+          message: aiText + "\n\n⚠️ JSON response was incomplete. Please try again.", 
+          edits: [] 
+        };
+      }
+      
+      // Check for incomplete JSON structure
+      if (!jsonString.includes('"edits"') || !jsonString.includes('[') || !jsonString.includes(']')) {
+        console.log('⚠️ [PARSE DEBUG] JSON missing required structure elements');
+        return { 
+          message: aiText + "\n\n⚠️ JSON response was malformed. Please try again.", 
           edits: [] 
         };
       }

@@ -20,6 +20,41 @@ export const formatResumeContent = (text) => {
       );
     }
     
+    // Handle Education format with Major, Minor, GPA labels
+    const educationPattern = /^(\*\*[^*]+\*\*):\s*([^,]+)(?:,\s*(\*\*[^*]+\*\*):\s*([^,]+))?(?:,\s*(\*\*[^*]+\*\*):\s*([^,]+))?$/;
+    const educationMatch = line.trim().match(educationPattern);
+    
+    if (educationMatch) {
+      const [, label1, value1, label2, value2, label3, value3] = educationMatch;
+      return (
+        <div key={index} className="mb-1">
+          <span className="font-semibold">{label1.replace(/\*\*/g, '')}:</span> {value1}
+          {label2 && value2 && (
+            <span>, <span className="font-semibold">{label2.replace(/\*\*/g, '')}:</span> {value2}</span>
+          )}
+          {label3 && value3 && (
+            <span>, <span className="font-semibold">{label3.replace(/\*\*/g, '')}:</span> {value3}</span>
+          )}
+        </div>
+      );
+    }
+    
+    // Handle Education first line with school/degree on left and graduation date on right
+    const educationFirstLinePattern = /^(.+?)\s+\*\*Expected Graduation Date:\*\*\s+(.+)$/;
+    const educationFirstLineMatch = line.trim().match(educationFirstLinePattern);
+    
+    if (educationFirstLineMatch) {
+      const [, leftSide, graduationDate] = educationFirstLineMatch;
+      return (
+        <div key={index} className="flex justify-between items-start mb-1">
+          <span className="flex-1">{formatInlineText(leftSide.trim())}</span>
+          <span className="text-gray-600 ml-4 flex-shrink-0">
+            <span className="font-semibold">Expected Graduation Date:</span> {graduationDate}
+          </span>
+        </div>
+      );
+    }
+    
     // Handle bullet points
     if (line.trim().startsWith('•') || line.trim().startsWith('-')) {
       return (
@@ -123,7 +158,7 @@ export const formatResumeContent = (text) => {
  * @param {string} text - The text to format
  * @returns {Array} Array of React elements with bold formatting
  */
-const formatInlineText = (text) => {
+export const formatInlineText = (text) => {
   if (!text) return '';
   
   // Handle bold text (wrapped in **)
@@ -162,11 +197,11 @@ export const convertToMarkdown = (text) => {
 export const getDefaultContent = (title) => {
   const defaults = {
     'Personal Information': '**YOUR NAME**\nYour Number | youremail@address.com | Location | Your Website',
-    'Skills': 'Languages: Python, Java, C++, JavaScript\nSkills: AWS, React, SQL, MongoDB, Node.js\nTools: Git, Docker, Jenkins, VS Code',
+    'Skills': 'Languages: Python, Java, C++, JavaScript\nSkills: AWS, React, SQL, MongoDB, Node.js',
     'Education': '**Your School**, (Degree Name ex Bachelor of Science)                                        **Expected Graduation Date:** Month Year\n**Major:** (Ex: Computer Science), **Minor:** Certificate or Minor in, **GPA:** Out of 4.0\n**Relevant Coursework**: (Optional, only list a couple of the most relevant courses taken)',
-    'Experience': '**MOST RECENT EMPLOYER**, Position Title                                                                                     Month Year - Present\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text\n\n**PREVIOUS EMPLOYER**, Position Title                                                                                       Month Year - Month Year\n**Position Title**\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text',
+    'Experience': '**MOST RECENT EMPLOYER**, Position Title                                                                                     Month Year - Present\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text (Check out our guide on how to write strong bullet points for technical resumes)\n• Text\n\n**PREVIOUS EMPLOYER**, Position Title                                                                                       Month Year - Month Year\n• Text (Lead with STRONG action verb, describe task/duty, your actions, and the result)\n• Text',
     'Projects': '**PROJECT NAME**                                                                                                                           Month Year - Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest, including awards/accomplishments/outcomes achieved based on some bullet point format from experience)\n• Text\n\n**ANOTHER PROJECT NAME**                                                                                                      Month Year - Month Year\n• Text (List a description of academic or personal projects relevant to industry of interest)\n• Text',
-    'Leadership & Community': '**ORGANIZATION**, Position Title                                                                                                    Month Year - Month Year\n**Position Title**\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text',
+    'Leadership & Community': '**ORGANIZATION**, Position Title                                                                                                    Month Year - Month Year\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text',
     'Awards & Honors': '**ORGANIZATION**                                                                                                                           Month Year - Month Year\n• Text (Volunteer positions, student organizations, campus engagement - follow the same bullet point format from experience)\n• Text',
     'Certifications': '[Certification Name] | [Issuing Organization] | [Date Earned]\n[Certification ID or Credential Number]\n\n[Another Certification] | [Organization] | [Date]\n[Credential details]'
   };

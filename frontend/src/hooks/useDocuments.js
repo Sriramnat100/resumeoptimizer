@@ -27,16 +27,54 @@ export const useDocuments = () => {
   };
 
   // Create new document
-  const createDocument = async () => {
+  // Create new document from template
+  const createDocumentFromTemplate = async (labelId) => {
     if (!newDocumentTitle.trim()) return;
     
-    console.log("requesting to create document");
+    console.log("requesting to create document from template", { labelId });
+    
+    try {
+      setLoading(true);
+      
+      // Find the most recent document with this label
+      const templateDocument = documentService.getMostRecentDocumentWithLabel(documents, labelId);
+      
+      if (templateDocument) {
+        console.log("Found template document:", templateDocument.title);
+        
+        const newDocument = await documentService.createDocument(newDocumentTitle, labelId, templateDocument);
+        
+        // Add the new document to the list
+        const documentWithLabel = { ...newDocument, label: labelId };
+        setDocuments([documentWithLabel, ...documents]);
+        setNewDocumentTitle('');
+        setNewDocumentLabel('');
+        setShowCreateForm(false);
+        setCurrentDocument(documentWithLabel);
+        return 'editor';
+      } else {
+        console.log("No template found for label:", labelId);
+        // Create a regular document if no template exists
+        return await createDocument();
+      }
+    } catch (error) {
+      console.error('Error creating document from template:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Create new document
+  const createDocument = async (templateDocument = null) => {
+    if (!newDocumentTitle.trim()) return;
+    
+    console.log("requesting to create document", { hasTemplate: !!templateDocument });
     
     try {
       setLoading(true);
       console.log("requesting to create document");
       
-      const newDocument = await documentService.createDocument(newDocumentTitle, newDocumentLabel);
+      const newDocument = await documentService.createDocument(newDocumentTitle, newDocumentLabel, templateDocument);
       
       // Add label to the document locally
       const documentWithLabel = { ...newDocument, label: newDocumentLabel };
@@ -392,6 +430,7 @@ export const useDocuments = () => {
     // Document operations
     fetchDocuments,
     createDocument,
+    createDocumentFromTemplate,
     openDocument,
     saveDocument,
     deleteDocument,

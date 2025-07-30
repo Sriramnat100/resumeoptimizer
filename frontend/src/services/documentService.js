@@ -49,19 +49,26 @@ class DocumentService {
    * Create a new document
    * @param {string} title - Document title
    * @param {string} label - Optional label ID
+   * @param {Object} templateDocument - Optional template document to copy from
    * @returns {Promise<Object>} Created document
    */
-  async createDocument(title, label = null) {
+  async createDocument(title, label = null, templateDocument = null) {
     if (!title.trim()) {
       throw new Error('Document title cannot be empty');
     }
 
     try {
-      console.log('📄 [DOC SERVICE] Creating document:', { title, label });
+      console.log('📄 [DOC SERVICE] Creating document:', { title, label, hasTemplate: !!templateDocument });
       
-      const payload = { title };
+      let payload = { title };
       if (label) {
         payload.label = label;
+      }
+      
+      // If we have a template, include the sections from it
+      if (templateDocument && templateDocument.sections) {
+        payload.sections = templateDocument.sections;
+        console.log('📄 [DOC SERVICE] Using template with sections:', templateDocument.sections.length);
       }
 
       const response = await axios.post(`${this.baseUrl}/api/documents`, payload, {
