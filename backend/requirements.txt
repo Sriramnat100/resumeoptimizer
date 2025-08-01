@@ -1,9 +1,9 @@
-fastapi==0.95.2
-uvicorn==0.22.0
+fastapi==0.88.0
+uvicorn==0.20.0
 pymongo==4.3.3
 python-multipart==0.0.6
 python-dotenv==1.0.0
-pydantic==1.10.8
+pydantic==1.10.2
 motor==3.1.1
 bcrypt==4.0.1
 python-jose[cryptography]==3.3.0
