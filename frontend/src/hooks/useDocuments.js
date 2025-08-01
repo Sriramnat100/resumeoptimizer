@@ -74,10 +74,13 @@ export const useDocuments = () => {
       setLoading(true);
       console.log("requesting to create document");
       
-      const newDocument = await documentService.createDocument(newDocumentTitle, newDocumentLabel, templateDocument);
+      // Use the newDocumentLabel if provided, otherwise it will be handled by the backend
+      const labelToUse = newDocumentLabel || null; // Let backend handle default
+      
+      const newDocument = await documentService.createDocument(newDocumentTitle, labelToUse, templateDocument);
       
       // Add label to the document locally
-      const documentWithLabel = { ...newDocument, label: newDocumentLabel };
+      const documentWithLabel = { ...newDocument, label: labelToUse };
       setDocuments([documentWithLabel, ...documents]);
       setNewDocumentTitle('');
       setNewDocumentLabel('');

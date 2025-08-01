@@ -59,6 +59,12 @@ const LabelManager = ({
       return;
     }
 
+    // Prevent creating another "Master Resume" label
+    if (newLabelName.trim().toLowerCase() === 'master resume') {
+      setError('A "Master Resume" label already exists as the default');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -188,7 +194,14 @@ const LabelManager = ({
               } ${getLabelColor(label.color)}`}
             >
               <div className={`w-3 h-3 rounded-full ${colorOptions.find(c => c.name === label.color)?.class}`} />
-              {label.name} ({getDocumentCount(label.id)})
+              <span className="flex items-center gap-1">
+                {label.name} ({getDocumentCount(label.id)})
+                {label.name === 'Master Resume' && (
+                  <span className="text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded-full">
+                    Default
+                  </span>
+                )}
+              </span>
             </button>
             
             {/* Edit/Delete Menu */}
@@ -202,7 +215,13 @@ const LabelManager = ({
               </button>
               <button
                 onClick={() => handleDeleteLabel(label)}
-                className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                disabled={label.name === 'Master Resume'}
+                className={`w-full px-3 py-2 text-left text-sm flex items-center gap-2 ${
+                  label.name === 'Master Resume'
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-red-600 hover:bg-red-50'
+                }`}
+                title={label.name === 'Master Resume' ? 'Cannot delete default label' : 'Delete label'}
               >
                 <Trash2 size={14} />
                 Delete

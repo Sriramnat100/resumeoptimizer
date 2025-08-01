@@ -11,36 +11,45 @@ import AddEntryForm from './components/AddEntryForm';
 import AIAssistant from './components/AIAssistant';
 import EditableSection from './components/EditableSection';
 import LabelManager from './components/LabelManager';
-import { formatResumeContent } from './utils/resumeUtils';
+import { formatResumeContent, getDefaultContent } from './utils/resumeUtils';
+import ResumeSection from './components/ResumeSection';
 import { useDocuments } from './hooks/useDocuments';
-import { getDefaultContent } from './utils/resumeUtils';
-const {
-  documents,
-  currentDocument,
-  loading,
-  saving,
-  versions,
-  newDocumentTitle,
-  newDocumentLabel,
-  fetchDocuments,
-  createDocument,
-  saveDocument,
-  deleteDocument,
-  setNewDocumentTitle,
-  setNewDocumentLabel
-} = useDocuments();
+import { formatDate } from './utils/dateUtils';
+
 console.log("hello");
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
 function AppContent() {
+  const {
+    documents,
+    currentDocument,
+    loading,
+    saving,
+    versions,
+    newDocumentTitle,
+    newDocumentLabel,
+    fetchDocuments,
+    createDocument,
+    saveDocument,
+    deleteDocument,
+    setNewDocumentTitle,
+    setNewDocumentLabel,
+    // ADD THESE MISSING FUNCTIONS:
+    setDocuments,
+    fetchVersions,
+    openDocument,
+    restoreVersion,
+    setCurrentDocument,
+    getAddButtonText,
+    moveSectionUp,
+    moveSectionDown,
+    updateSectionContent,
+    addNewEntry,
+    applyEdit
+  } = useDocuments();
+
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
-  const [documents, setDocuments] = useState([]);
-  const [currentDocument, setCurrentDocument] = useState(null);
   const [currentView, setCurrentView] = useState('home'); // 'home', 'editor', 'versions'
-  const [versions, setVersions] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [newDocumentTitle, setNewDocumentTitle] = useState('');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
   const [showAddForm, setShowAddForm] = useState(null);
@@ -53,7 +62,6 @@ function AppContent() {
   // Label System State
   const [labels, setLabels] = useState([]); // Start with empty labels
   const [selectedLabel, setSelectedLabel] = useState('all');
-  const [newDocumentLabel, setNewDocumentLabel] = useState('');
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -159,6 +167,10 @@ function AppContent() {
     }
   }, [isAuthenticated, user, authLoading]); // Add authLoading to dependencies
 
+  // Add this useEffect to track currentView changes
+  useEffect(() => {
+  }, [currentView]);
+
   // Show loading screen while checking authentication
   if (authLoading) {
     return (
@@ -180,438 +192,6 @@ function AppContent() {
     );
   }
 
-  const fetchDocuments = async () => {
-    try {
-      setLoading(true);
-      console.log('Fetching documents from:', `${API_BASE_URL}/api/documents`);
-      const response = await axios.get(`${API_BASE_URL}/api/documents`);
-      console.log('Documents fetched successfully:', response.data);
-      setDocuments(response.data);
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-      console.error('Error details:', error.response?.data || error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Add this helper function after the existing helper functions
-  const getMostRecentDocumentWithLabel = (labelId) => {
-    const documentsWithLabel = documents.filter(doc => doc.label === labelId);
-    if (documentsWithLabel.length === 0) return null;
-    
-    // Sort by updated_at and return the most recent
-    return documentsWithLabel.sort((a, b) => 
-      new Date(b.updated_at) - new Date(a.updated_at)
-    )[0];
-  };
-
-  // Update the createDocument function
-  const createDocument = async () => {
-    if (!newDocumentTitle.trim()) return;
-    
-    // If a label is selected, check if we should open existing or create new
-    if (newDocumentLabel) {
-      const existingDocument = getMostRecentDocumentWithLabel(newDocumentLabel);
-      
-      if (existingDocument) {
-        // Open the most recent document with this label
-        console.log('Opening existing document with label:', newDocumentLabel);
-        await openDocument(existingDocument.id);
-        setNewDocumentTitle('');
-        setNewDocumentLabel('');
-        setShowCreateForm(false);
-        return;
-      }
-    }
-    
-    // Create new document if no existing document with label found
-    try {
-      setLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/api/documents`, {
-        title: newDocumentTitle
-      });
-      
-      // Add label to the document locally
-      const documentWithLabel = { ...response.data, label: newDocumentLabel };
-      setDocuments([documentWithLabel, ...documents]);
-      setNewDocumentTitle('');
-      setNewDocumentLabel('');
-      setShowCreateForm(false);
-      setCurrentDocument(documentWithLabel);
-      setCurrentView('editor');
-    } catch (error) {
-      console.error('Error creating document:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const openDocument = async (documentId) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/documents/${documentId}`);
-      setCurrentDocument(response.data);
-      setCurrentView('editor');
-    } catch (error) {
-      console.error('Error opening document:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveDocument = async () => {
-    if (!currentDocument) return;
-    
-    try {
-      setSaving(true);
-      await axios.put(`${API_BASE_URL}/api/documents/${currentDocument.id}`, {
-        title: currentDocument.title,
-        sections: currentDocument.sections
-      });
-      
-      // Update the document in the list
-      setDocuments(documents.map(doc => 
-        doc.id === currentDocument.id ? currentDocument : doc
-      ));
-    } catch (error) {
-      console.error('Error saving document:', error);
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const updateSectionContent = (sectionId, newContent) => {
-    if (!currentDocument) return;
-    
-    const updatedSections = currentDocument.sections.map(section =>
-      section.id === sectionId 
-        ? { ...section, content: { text: newContent } }
-        : section
-    );
-    
-    setCurrentDocument({
-      ...currentDocument,
-      sections: updatedSections
-    });
-  };
-
-  const moveSectionUp = (sectionId) => {
-    if (!currentDocument) return;
-    
-    const sections = [...currentDocument.sections];
-    const index = sections.findIndex(section => section.id === sectionId);
-    
-    if (index > 0) {
-      // Swap with previous section
-      [sections[index], sections[index - 1]] = [sections[index - 1], sections[index]];
-      
-      // Update order values
-      sections.forEach((section, i) => {
-        section.order = i + 1;
-      });
-      
-      setCurrentDocument({
-        ...currentDocument,
-        sections
-      });
-    }
-  };
-
-  const moveSectionDown = (sectionId) => {
-    if (!currentDocument) return;
-    
-    const sections = [...currentDocument.sections];
-    const index = sections.findIndex(section => section.id === sectionId);
-    
-    if (index < sections.length - 1) {
-      // Swap with next section
-      [sections[index], sections[index + 1]] = [sections[index + 1], sections[index]];
-      
-      // Update order values
-      sections.forEach((section, i) => {
-        section.order = i + 1;
-      });
-      
-      setCurrentDocument({
-        ...currentDocument,
-        sections
-      });
-    }
-  };
-
-  const addNewEntry = (sectionId, newEntry) => {
-    if (!currentDocument) return;
-    
-    const updatedSections = currentDocument.sections.map(section => {
-      if (section.id === sectionId) {
-        const currentContent = section.content?.text || '';
-        const newContent = currentContent + '\n\n' + newEntry;
-        return { ...section, content: { text: newContent } };
-      }
-      return section;
-    });
-    
-    setCurrentDocument({
-      ...currentDocument,
-      sections: updatedSections
-    });
-  };
-
-  const deleteDocument = async (documentId) => {
-    if (!window.confirm('Are you sure you want to delete this document?')) return;
-    
-    try {
-      await axios.delete(`${API_BASE_URL}/api/documents/${documentId}`);
-      setDocuments(documents.filter(doc => doc.id !== documentId));
-      if (currentDocument && currentDocument.id === documentId) {
-        setCurrentDocument(null);
-        setCurrentView('home');
-      }
-    } catch (error) {
-      console.error('Error deleting document:', error);
-    }
-  };
-
-  const fetchVersions = async (documentId) => {
-    try {
-      setLoading(true);
-      const response = await axios.get(`${API_BASE_URL}/api/documents/${documentId}/versions`);
-      setVersions(response.data);
-      setCurrentView('versions');
-    } catch (error) {
-      console.error('Error fetching versions:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const restoreVersion = async (versionNumber) => {
-    if (!currentDocument) return;
-    
-    try {
-      setLoading(true);
-      const response = await axios.post(`${API_BASE_URL}/api/documents/${currentDocument.id}/versions/${versionNumber}/restore`);
-      setCurrentDocument(response.data);
-      setCurrentView('editor');
-    } catch (error) {
-      console.error('Error restoring version:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getResumeContext = () => {
-    console.log('📄 [CONTEXT DEBUG] getResumeContext called');
-    console.log('📄 [CONTEXT DEBUG] currentDocument exists:', !!currentDocument);
-    
-    if (!currentDocument) {
-      console.log('⚠️ [CONTEXT DEBUG] No current document, returning default message');
-      return "No resume is currently open.";
-    }
-    
-    console.log('📄 [CONTEXT DEBUG] Document title:', currentDocument.title);
-    console.log('📄 [CONTEXT DEBUG] Document sections count:', currentDocument.sections.length);
-    
-    let context = `RESUME: ${currentDocument.title}\n\n`;
-    
-    currentDocument.sections.forEach((section, index) => {
-      console.log(`📄 [CONTEXT DEBUG] Processing section ${index + 1}:`, section.title);
-      const content = section.content?.text || getDefaultContent(section.title);
-      console.log(`📄 [CONTEXT DEBUG] Section ${index + 1} content length:`, content ? content.length : 0);
-      console.log(`📄 [CONTEXT DEBUG] Section ${index + 1} has placeholder text:`, content ? (content.includes('YOUR NAME') || content.includes('Text (Lead with')) : false);
-      
-      if (content && content.trim() && !content.includes('YOUR NAME') && !content.includes('Text (Lead with')) {
-        context += `${section.title.toUpperCase()}:\n${content}\n\n`;
-        console.log(`📄 [CONTEXT DEBUG] Added section ${index + 1} to context`);
-      } else {
-        console.log(`📄 [CONTEXT DEBUG] Skipped section ${index + 1} (empty or placeholder)`);
-      }
-    });
-    
-    console.log('📄 [CONTEXT DEBUG] Final context length:', context.length);
-    console.log('📄 [CONTEXT DEBUG] Final context preview:', context.substring(0, 200) + '...');
-    
-    return context;
-  };
-
-  const parseAiResponse = (aiText) => {
-    console.log('🔍 [PARSE DEBUG] parseAiResponse called with text length:', aiText.length);
-    console.log('🔍 [PARSE DEBUG] Text preview:', aiText.substring(0, 200) + '...');
-    console.log('🔍 [PARSE DEBUG] Text ends with:', aiText.slice(-50));
-    
-    try {
-      // Check if response seems truncated
-      const seemsTruncated = aiText.endsWith('{') || aiText.endsWith(',') || aiText.endsWith('[') || !aiText.trim().endsWith('}');
-      
-      if (seemsTruncated) {
-        console.log('⚠️ [PARSE DEBUG] AI response appears truncated:', aiText.slice(-50));
-        return { 
-          message: aiText + "\n\n⚠️ Response was truncated. Please try asking again for complete suggestions.", 
-          edits: [] 
-        };
-      }
-
-      // Look for the JSON pattern that starts with { and contains "edits"
-      console.log('🔍 [PARSE DEBUG] Looking for JSON pattern...');
-      const jsonMatch = aiText.match(/\{\s*"edits"\s*:\s*\[[\s\S]*?\]\s*\}/);
-      
-      if (jsonMatch) {
-        console.log('✅ [PARSE DEBUG] Found JSON match!');
-        const jsonString = jsonMatch[0];
-        console.log('🔍 [PARSE DEBUG] JSON string length:', jsonString.length);
-        console.log('🔍 [PARSE DEBUG] JSON string:', jsonString);
-        
-        // Validate JSON completeness - check for balanced brackets
-        const openBraces = (jsonString.match(/\{/g) || []).length;
-        const closeBraces = (jsonString.match(/\}/g) || []).length;
-        const openBrackets = (jsonString.match(/\[/g) || []).length;
-        const closeBrackets = (jsonString.match(/\]/g) || []).length;
-        
-        console.log('🔍 [PARSE DEBUG] Bracket count - Braces:', openBraces, '/', closeBraces, 'Brackets:', openBrackets, '/', closeBrackets);
-        
-        if (openBraces !== closeBraces || openBrackets !== closeBrackets) {
-          console.log('⚠️ [PARSE DEBUG] JSON appears incomplete - unmatched brackets');
-          return { 
-            message: aiText + "\n\n⚠️ Suggestions were incomplete. Please try again.", 
-            edits: [] 
-          };
-        }
-        
-        // Log what we're trying to parse for debugging
-        console.log('🔍 [PARSE DEBUG] Attempting to parse JSON...');
-        
-        const parsed = JSON.parse(jsonString);
-        console.log('✅ [PARSE DEBUG] JSON parsed successfully!');
-        console.log('🔍 [PARSE DEBUG] Parsed object keys:', Object.keys(parsed));
-        console.log('🔍 [PARSE DEBUG] Edits array length:', parsed.edits ? parsed.edits.length : 0);
-        
-        // Remove the JSON from the message text
-        const cleanMessage = aiText.replace(jsonMatch[0], '').trim();
-        console.log('🔍 [PARSE DEBUG] Clean message length:', cleanMessage.length);
-        
-        return {
-          message: cleanMessage,
-          edits: parsed.edits || []
-        };
-      } else {
-        console.log('⚠️ [PARSE DEBUG] No JSON pattern found in response');
-      }
-    } catch (e) {
-      console.error('💥 [PARSE DEBUG] Failed to parse AI JSON response:', e);
-      console.error('💥 [PARSE DEBUG] Error name:', e.name);
-      console.error('💥 [PARSE DEBUG] Error message:', e.message);
-      console.log('🔍 [PARSE DEBUG] Raw AI text:', aiText);
-      
-      // Try alternative parsing - look for just the edits array
-      try {
-        console.log('🔍 [PARSE DEBUG] Trying alternative parsing...');
-        const editsMatch = aiText.match(/"edits"\s*:\s*\[[^\]]*\]/);
-        if (editsMatch) {
-          console.log('✅ [PARSE DEBUG] Found edits match with alternative method');
-          const editsJson = `{${editsMatch[0]}}`;
-          console.log('🔍 [PARSE DEBUG] Alternative JSON:', editsJson);
-          const parsed = JSON.parse(editsJson);
-          console.log('✅ [PARSE DEBUG] Alternative parsing successful');
-          return {
-            message: aiText.replace(editsMatch[0], '').trim(),
-            edits: parsed.edits || []
-          };
-        } else {
-          console.log('⚠️ [PARSE DEBUG] No edits match found with alternative method');
-        }
-      } catch (e2) {
-        console.error('💥 [PARSE DEBUG] Alternative parsing also failed:', e2);
-        console.error('💥 [PARSE DEBUG] Alternative error name:', e2.name);
-        console.error('💥 [PARSE DEBUG] Alternative error message:', e2.message);
-      }
-    }
-    
-    // Fallback if no JSON found or parsing failed
-    console.log('🔄 [PARSE DEBUG] Using fallback - no JSON found or parsing failed');
-    return { message: aiText, edits: [] };
-  };
-
-
-
-
-
-  // Add the missing applyEdit function
-  const applyEdit = async (edit) => {
-    if (!currentDocument) {
-      console.error('No document loaded');
-      return;
-    }
-
-    if (!currentDocument._id && !currentDocument.id) {
-      console.error('Document has no ID:', currentDocument);
-      return;
-    }
-
-    try {
-      console.log('Applying edit:', edit);
-      console.log('Current document:', currentDocument);
-
-      // Find the section to edit
-      const section = currentDocument.sections.find(s => 
-        s.id === edit.sectionId || 
-        s.title.toLowerCase().replace(/\s+/g, '-') === edit.sectionId ||
-        edit.sectionId.includes(s.title.toLowerCase().replace(/\s+/g, '-'))
-      );
-      
-      if (!section) {
-        console.error('Section not found for edit:', edit);
-        console.log('Available sections:', currentDocument.sections.map(s => ({ id: s.id, title: s.title })));
-        return;
-      }
-
-      let newContent = section.content?.text || getDefaultContent(section.title);
-
-      // Apply the edit based on action type
-      if (edit.action === 'replace' && edit.find && edit.replace) {
-        newContent = newContent.replace(edit.find, edit.replace);
-      } else if (edit.action === 'add' && edit.addition) {
-        newContent = newContent + '\n' + edit.addition;
-      } else if (edit.action === 'remove' && edit.find) {
-        newContent = newContent.replace(edit.find, '');
-      }
-
-      // Update the document
-      const updatedSections = currentDocument.sections.map(s => 
-        s.id === section.id 
-          ? { ...s, content: { ...s.content, text: newContent } }
-          : s
-      );
-
-      const updatedDocument = {
-        ...currentDocument,
-        sections: updatedSections
-      };
-
-      // Use _id or id, whichever exists
-      const documentId = currentDocument._id || currentDocument.id;
-      
-      // Save to backend
-      await axios.put(`${API_BASE_URL}/api/documents/${documentId}`, updatedDocument);
-      
-      // Update local state
-      setCurrentDocument(updatedDocument);
-      
-      console.log('Edit applied successfully');
-    } catch (error) {
-      console.error('Error applying edit:', error);
-    }
-  };
 
 
 
@@ -665,113 +245,7 @@ function AppContent() {
     }
   };
 
-
-
-  const getAddButtonText = (title) => {
-    const buttonTexts = {
-      'Personal Information': 'Add header',
-      'Skills': 'Add skills',
-      'Education': 'Add education',
-      'Experience': 'Add experience',
-      'Projects': 'Add projects',
-      'Leadership & Community': 'Add leadership & community',
-      'Awards & Honors': 'Add awards & honors',
-      'Certifications': 'Add certifications'
-    };
-    return buttonTexts[title] || `Add ${title.toLowerCase()}`;
-  };
-
-
-
-
-
-
-  const SectionControls = ({ section, isFirst, isLast }) => {
-    return (
-      <div className="flex items-center gap-2 ml-4">
-        <button
-          onClick={() => moveSectionUp(section.id)}
-          disabled={isFirst}
-          className="p-1 text-gray-500 hover:text-blue-600 disabled:text-gray-300 disabled:cursor-not-allowed"
-          title="Move up"
-        >
-          <ChevronUp size={16} />
-        </button>
-        <button
-          onClick={() => moveSectionDown(section.id)}
-          disabled={isLast}
-          className="p-1 text-gray-500 hover:text-blue-600 disabled:text-gray-300 disabled:cursor-not-allowed rounded"
-          title="Move down"
-        >
-          <ChevronDown size={16} />
-        </button>
-      </div>
-    );
-  };
-
-  const ResumeSection = ({ section, isEditing, onEdit, isFirst, isLast }) => {
-    const content = section.content?.text || getDefaultContent(section.title);
-    
-    if (section.title === 'Personal Information') {
-      const lines = content.split('\n');
-      return (
-        <div className="mb-6">
-          <div 
-            className="resume-header cursor-pointer hover:bg-blue-50 p-2 rounded border border-transparent hover:border-blue-200 transition-all"
-            onClick={() => onEdit(section.id)}
-            title="Click to edit"
-          >
-            <div className="name">{lines[0] || 'YOUR NAME'}</div>
-            <div className="contact-info">{lines[1] || 'Contact Information'}</div>
-          </div>
-        </div>
-      );
-    }
-
-    return (
-              <div className="mb-6">
-        
-        {showAddForm === section.id && (
-          <div className="mb-4 p-4 bg-blue-50 border-2 border-blue-200 rounded-lg shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <h4 className="font-medium text-blue-900">
-                Adding to {section.title}
-              </h4>
-              <button
-                onClick={() => setShowAddForm(null)}
-                className="text-blue-600 hover:text-blue-800 text-sm"
-              >
-                ✕ Close
-              </button>
-            </div>
-            <AddEntryForm
-              section={section}
-              onAdd={addNewEntry}
-              onCancel={() => setShowAddForm(null)}
-            />
-          </div>
-        )}
-        
-        <div className="resume-section">
-          <div 
-            className="section-header cursor-pointer hover:bg-blue-50 p-1 rounded border border-transparent hover:border-blue-200 transition-all"
-            onClick={() => onEdit(section.id)}
-            title="Click to edit"
-          >
-            {section.title.toUpperCase()}
-          </div>
-          <div 
-            className="section-content cursor-pointer hover:bg-blue-50 p-2 rounded border border-transparent hover:border-blue-200 transition-all"
-            onClick={() => onEdit(section.id)}
-            title="Click to edit"
-          >
-            {formatResumeContent(content)}
-          </div>
-        </div>
-      </div>
-    );
-  };
-
+  
   // Add helper functions after the existing functions
   const getLabelColor = (color) => {
     const colors = {
@@ -1007,7 +481,12 @@ function AppContent() {
                     onChange={(e) => setNewDocumentTitle(e.target.value)}
                     placeholder="Enter resume title..."
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    onKeyPress={(e) => e.key === 'Enter' && createDocument()}
+                    onKeyPress={async (e) => {
+                      if (e.key === 'Enter') {
+                        await createDocument();
+                        setCurrentView('editor');
+                      }
+                    }}
                   />
                   
                   <div className="space-y-2">
@@ -1030,7 +509,10 @@ function AppContent() {
                   
                   <div className="flex gap-3">
                     <button
-                      onClick={createDocument}
+                      onClick={async () => {
+                        await createDocument();
+                        setCurrentView('editor');
+                      }}
                       disabled={!newDocumentTitle.trim() || loading}
                       className="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 disabled:bg-gray-400 transition-colors font-medium"
                     >
@@ -1082,7 +564,10 @@ function AppContent() {
                         </div>
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                           <button
-                            onClick={() => fetchVersions(doc.id)}
+                            onClick={async () => {
+                              const view = await fetchVersions(doc.id);
+                              if (view) setCurrentView(view);  // Actually switches the view
+                            }}
                             className="text-gray-500 hover:text-blue-600 transition-colors p-2 rounded-lg hover:bg-blue-50"
                             title="View versions"
                           >
@@ -1114,7 +599,10 @@ function AppContent() {
                       </p>
                       
                       <button
-                        onClick={() => openDocument(doc.id)}
+                        onClick={async () => {
+                          await openDocument(doc.id);
+                          setCurrentView('editor');
+                        }}
                         className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-4 py-3 rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all duration-200 font-medium"
                       >
                         Open Document
@@ -1189,7 +677,24 @@ function AppContent() {
                     </div>
                     
                     <button
-                      onClick={() => restoreVersion(version.version_number)}
+                      onClick={async () => {
+                        console.log('🔍 [RESTORE DEBUG] Restore button clicked');
+                        console.log('🔍 [RESTORE DEBUG] Version number:', version.version_number);
+                        console.log('🔍 [RESTORE DEBUG] Current view before:', currentView);
+                        
+                        try {
+                          const view = await restoreVersion(version.version_number);
+                          console.log('🔍 [RESTORE DEBUG] restoreVersion returned:', view);
+                          
+                          if (view) {
+                            setCurrentView(view);
+                          } else {
+                            console.log('�� [RESTORE DEBUG] No view returned from restoreVersion');
+                          }
+                        } catch (error) {
+                          console.error('🔍 [RESTORE DEBUG] Error in restore button click:', error);
+                        }
+                      }}
                       className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
                     >
                       Restore
@@ -1210,29 +715,45 @@ function AppContent() {
         <div className="bg-white border-b border-gray-200 sticky top-0 z-10">
           <div className="max-w-7xl mx-auto px-6 py-4">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-1 min-w-0">
                 <button
                   onClick={() => setCurrentView('home')}
-                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700"
+                  className="flex items-center gap-2 text-blue-600 hover:text-blue-700 flex-shrink-0"
                 >
                   <ArrowLeft size={20} />
                   Back
                 </button>
                 
-                <div className="flex items-center gap-2">
-                  <Edit3 className="text-blue-600" size={24} />
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <Edit3 className="text-blue-600 flex-shrink-0" size={24} />
                   <input
                     type="text"
                     value={currentDocument.title}
                     onChange={(e) => setCurrentDocument({...currentDocument, title: e.target.value})}
-                    className="text-xl font-semibold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
+                    className="text-xl font-semibold text-gray-900 bg-transparent border-none focus:outline-none focus:ring-2 focus:ring-blue-500 rounded px-2 flex-1 min-w-0 w-full"
+                    placeholder="Enter document title..."
                   />
                 </div>
               </div>
               
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => fetchVersions(currentDocument.id)}
+                  onClick={async () => {
+                    console.log('🔍 [VERSIONS DEBUG] Versions button clicked in editor view');
+                    
+                    try {
+                      const view = await fetchVersions(currentDocument.id);
+                      
+                      if (view) {
+                        console.log('🔍 [VERSIONS DEBUG] Setting currentView to:', view);
+                        setCurrentView(view);
+                      } else {
+                        console.log('🔍 [VERSIONS DEBUG] No view returned from fetchVersions');
+                      }
+                    } catch (error) {
+                      console.error('🔍 [VERSIONS DEBUG] Error in versions button click:', error);
+                    }
+                  }}
                   className="flex items-center gap-2 text-gray-600 hover:text-blue-600 px-3 py-2 rounded-lg transition-colors"
                 >
                   <History size={16} />
@@ -1286,7 +807,13 @@ function AppContent() {
                   section.title !== 'Personal Information' && (
                     <button
                       key={section.id}
-                      onClick={() => setShowAddForm(section.id)}
+                      onClick={() => {
+                        console.log('🔍 [ADD BUTTON DEBUG] Add button clicked for section:', section.title);
+                        console.log('🔍 [ADD BUTTON DEBUG] Section ID:', section.id);
+                        console.log('🔍 [ADD BUTTON DEBUG] Current showAddForm:', showAddForm);
+                        setShowAddForm(section.id);
+                        console.log('🔍 [ADD BUTTON DEBUG] Set showAddForm to:', section.id);
+                      }}
                       className={`w-full flex items-center gap-3 px-4 py-3 border rounded-lg transition-all text-left group ${
                         showAddForm === section.id 
                           ? 'bg-blue-100 border-blue-300 ring-2 ring-blue-200' 
@@ -1401,7 +928,34 @@ function AppContent() {
                         onEdit={(sectionId) => setEditingSection(sectionId)}
                         isFirst={index === 0}
                         isLast={index === currentDocument.sections.length - 1}
+                        onAddEntry={addNewEntry}
                       />
+                    )}
+                    
+                    {/* Add Entry Form - Show when showAddForm matches this section */}
+                    {showAddForm === section.id && (
+                      <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <AddEntryForm
+                          section={section}
+                          onAdd={(newEntry) => {
+                            console.log('🔍 [ADD ENTRY DEBUG] Adding new entry to section:', section.title);
+                            console.log('🔍 [ADD ENTRY DEBUG] New entry:', newEntry);
+                            console.log('🔍 [ADD ENTRY DEBUG] Section ID:', section.id);
+                            
+                            if (newEntry && newEntry.trim()) {
+                              addNewEntry(section.id, newEntry);
+                              setShowAddForm(null);
+                              console.log('🔍 [ADD ENTRY DEBUG] Entry added and form closed');
+                            } else {
+                              console.log('🔍 [ADD ENTRY DEBUG] No valid entry to add');
+                            }
+                          }}
+                          onCancel={() => {
+                            console.log('🔍 [ADD ENTRY DEBUG] Cancelled adding entry to section:', section.title);
+                            setShowAddForm(null);
+                          }}
+                        />
+                      </div>
                     )}
                   </div>
                 ))}

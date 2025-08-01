@@ -1,3 +1,4 @@
+//Imports all the necessary components and hooks
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import './App.css';
@@ -5,8 +6,7 @@ import { FileText, Plus, Save, History, Trash2, Edit3, Clock, ArrowLeft, Chevron
 import { AuthProvider, useAuth } from './AuthContext';
 import Login from './Login';
 import Register from './Register';
-import html2canvas from 'html2canvas';
-import jsPDF from 'jspdf';
+
 import AddEntryForm from './components/AddEntryForm';
 import AIAssistant from './components/AIAssistant';
 import EditableSection from './components/EditableSection';
@@ -17,10 +17,12 @@ import { useDocuments } from './hooks/useDocuments';
 import { useLabels } from './hooks/useLabels';
 import { formatDate } from './utils/dateUtils';
 import DocumentLabelSelector from './components/DocumentLabelSelector';
+import { downloadPDF } from './utils/pdfUtils';
 
 console.log("hello");
 const API_BASE_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001';
 
+//Main app content that everything intereacts with
 function AppContent() {
   console.log('🏷️ [APP] AppContent component rendering');
   
@@ -53,7 +55,9 @@ function AppContent() {
     applyEdit,
     updateDocumentLabel
   } = useDocuments();
+  //Usedocuments is a custom hook that gives you everything related to resumes
 
+  //Waits until user is authenticated
   const { user, logout, isAuthenticated, loading: authLoading } = useAuth();
   
   console.log('🏷️ [APP] Authentication state:', { isAuthenticated, authLoading, user: user?.username });
@@ -73,9 +77,14 @@ function AppContent() {
     getDocumentCount,
     getFilteredDocuments,
     addLabelToDocument,
-    removeLabelFromDocuments
+    removeLabelFromDocuments,
+    handleDeleteLabel,
+    handleCreateLabel,
+    handleEditLabel,
+    handleUpdateDocumentLabel
   } = useLabels();
 
+  //What the user is currently looking at
   const [currentView, setCurrentView] = useState('home'); // 'home', 'editor', 'versions'
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [editingSection, setEditingSection] = useState(null);
@@ -83,7 +92,7 @@ function AppContent() {
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'register'
   const [openDropdownDocId, setOpenDropdownDocId] = useState(null);
 
-  // Fixed useEffect - removed circular dependencies
+  //Run this code when the user is authenticated
   useEffect(() => {
     console.log('👤 [APP] useEffect triggered:', { isAuthenticated, user, authLoading });
     
@@ -91,7 +100,7 @@ function AppContent() {
     if (isAuthenticated && user && !authLoading) {
       console.log('👤 [APP] User is authenticated, fetching data...');
       
-      // Fetch documents and labels
+      // Fetch documents and labels if the user is authenticated
       fetchDocuments();
       fetchLabels();
     } else {
@@ -103,7 +112,7 @@ function AppContent() {
   useEffect(() => {
   }, [currentView]);
 
-  // Show loading screen while checking authentication
+  // Show a spinning screen while auth is loading
   if (authLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -124,146 +133,25 @@ function AppContent() {
     );
   }
 
-  const downloadPDF = async () => {
-    if (!currentDocument) return;
-    
+  // PDF download handler with error handling
+  const handleDownloadPDF = async () => {
     try {
-      // Create a temporary div to render the resume for PDF
-      const resumeElement = document.querySelector('.resume-container');
-      if (!resumeElement) {
-        console.error('Resume container not found');
-        return;
-      }
-
-      // Temporarily hide the AI Assistant to avoid capturing it
-      const aiAssistant = document.querySelector('.w-96.border-l.border-gray-200');
-      const originalDisplay = aiAssistant ? aiAssistant.style.display : '';
-      if (aiAssistant) {
-        aiAssistant.style.display = 'none';
-      }
-
-      // Use html2canvas to capture the resume with better settings
-      const canvas = await html2canvas(resumeElement, {
-        scale: 1.5, // Better quality than 1, but not as heavy as 2
-        useCORS: true,
-        allowTaint: true,
-        backgroundColor: '#ffffff',
-        logging: false,
-        removeContainer: true,
-        width: resumeElement.offsetWidth,
-        height: resumeElement.offsetHeight,
-        // Better rendering options
-        foreignObjectRendering: false,
-        imageTimeout: 0,
-        onclone: (clonedDoc) => {
-          // Ensure proper styling in the cloned document
-          const clonedResume = clonedDoc.querySelector('.resume-container');
-          if (clonedResume) {
-            clonedResume.style.width = '100%';
-            clonedResume.style.maxWidth = '800px';
-            clonedResume.style.margin = '0 auto';
-            clonedResume.style.padding = '20px';
-            clonedResume.style.backgroundColor = '#ffffff';
-          }
-        }
-      });
-
-      // Restore AI Assistant visibility
-      if (aiAssistant) {
-        aiAssistant.style.display = originalDisplay;
-      }
-
-      // Convert canvas to PDF with better quality
-      const imgData = canvas.toDataURL('image/png'); // Use PNG for better text quality
-      const pdf = new jsPDF('p', 'mm', 'a4');
-      
-      const imgWidth = 210; // A4 width in mm
-      const pageHeight = 295; // A4 height in mm
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
-      let heightLeft = imgHeight;
-
-      let position = 0;
-
-      // Add first page
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
-
-      // Add additional pages if needed
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
-        pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
-      }
-
-      // Download the PDF
-      pdf.save(`${currentDocument.title || 'resume'}.pdf`);
+      await downloadPDF(currentDocument);
     } catch (error) {
-      console.error('Error generating PDF:', error);
+      console.error('Error downloading PDF:', error);
       alert('Error generating PDF. Please try again.');
     }
   };
 
-  // Updated helper functions to use the hook
-  const handleDeleteLabel = async (labelId) => {
-    try {
-      await deleteLabel(labelId);
-      // Remove label from documents that use it
-      removeLabelFromDocuments(labelId, setDocuments);
-    } catch (error) {
-      console.error('Failed to delete label:', error);
-    }
-  };
-
-  const handleCreateLabel = async (name, color) => {
-    try {
-      return await createCustomLabel(name, color);
-    } catch (error) {
-      console.error('Failed to create label:', error);
-      throw error;
-    }
-  };
-
-  const handleEditLabel = async (labelId, name, color) => {
-    try {
-      return await editLabel(labelId, name, color);
-    } catch (error) {
-      console.error('Failed to edit label:', error);
-      throw error;
-    }
-  };
-
-  const handleAddLabelToDocument = (documentId, labelId) => {
-    addLabelToDocument(documentId, labelId, setDocuments);
-  };
-
-  // Add this handler for updating document labels
-  const handleUpdateDocumentLabel = async (documentId, labelId) => {
-    console.log('🎯 [HANDLER] handleUpdateDocumentLabel called');
-    console.log('🎯 [HANDLER] Document ID:', documentId);
-    console.log('🎯 [HANDLER] Label ID:', labelId);
-    console.log('🎯 [HANDLER] Label ID is null:', labelId === null);
-    console.log('🎯 [HANDLER] updateDocumentLabel function exists:', typeof updateDocumentLabel);
-    
-    try {
-      console.log('🎯 [HANDLER] Calling updateDocumentLabel...');
-      const updated = await updateDocumentLabel(documentId, labelId);
-      console.log('✅ [HANDLER] updateDocumentLabel completed successfully');
-      console.log('✅ [HANDLER] Updated document:', updated);
-
-      return updated;
-    } catch (error) {
-      console.error("❌ [HANDLER] Failed to update document label:", error);
-      console.error("❌ [HANDLER] Error details:", error.response?.data || error.message);
-      throw error;
-    }
-  };
-
-  // Handler for dropdown toggle to manage z-index
+  // When a dropdown for changing a document's label is opened
   const handleDropdownToggle = (documentId, isOpen) => {
     setOpenDropdownDocId(isOpen ? documentId : null);
   };
 
+  //Displays whatever the user is currently looking at,
+  //If the currentview == home, it displays the home page
+  //If the currentview == editor, it displays the editor page
+  //IF the currentview == versions, it displays the versions
   if (currentView === 'home') {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
@@ -395,11 +283,11 @@ function AppContent() {
                     className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     onKeyPress={async (e) => {
                       if (e.key === 'Enter') {
-                        if (newDocumentLabel) {
-                          // If a label is selected, create from template
-                          await createDocumentFromTemplate(newDocumentLabel);
+                        // Use the selected label or the first label (Master Resume) as default
+                        const labelToUse = newDocumentLabel || (labels.length > 0 ? labels[0].id : null);
+                        if (labelToUse) {
+                          await createDocumentFromTemplate(labelToUse);
                         } else {
-                          // If no label, create regular document
                           await createDocument();
                         }
                         setCurrentView('editor');
@@ -408,13 +296,12 @@ function AppContent() {
                   />
                   
                   <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-700">Label (optional)</label>
+                    <label className="block text-sm font-medium text-gray-700">Label</label>
                     <select
-                      value={newDocumentLabel}
+                      value={newDocumentLabel || (labels.length > 0 ? labels[0].id : '')}
                       onChange={(e) => setNewDocumentLabel(e.target.value)}
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     >
-                      <option value="">No label</option>
                       {labels.map(label => (
                         <option key={label.id} value={label.id}>
                           {label.name}
@@ -428,11 +315,11 @@ function AppContent() {
                   <div className="flex gap-3">
                     <button
                       onClick={async () => {
-                        if (newDocumentLabel) {
-                          // If a label is selected, create from template
-                          await createDocumentFromTemplate(newDocumentLabel);
+                        // Use the selected label or the first label (Master Resume) as default
+                        const labelToUse = newDocumentLabel || (labels.length > 0 ? labels[0].id : null);
+                        if (labelToUse) {
+                          await createDocumentFromTemplate(labelToUse);
                         } else {
-                          // If no label, create regular document
                           await createDocument();
                         }
                         setCurrentView('editor');
@@ -440,7 +327,7 @@ function AppContent() {
                       disabled={!newDocumentTitle.trim() || loading}
                       className="flex-1 bg-green-600 text-white px-6 py-3 rounded-xl hover:bg-green-700 disabled:bg-gray-400 transition-colors font-medium"
                     >
-                      {newDocumentLabel ? 'Create from Template' : 'Create'}
+                      Create Resume
                     </button>
                     <button
                       onClick={() => {
@@ -464,9 +351,9 @@ function AppContent() {
             selectedLabel={selectedLabel}
             documents={documents}
             onLabelSelect={setSelectedLabel}
-            onCreateLabel={handleCreateLabel}
-            onDeleteLabel={handleDeleteLabel}
-            onEditLabel={handleEditLabel}
+            onCreateLabel={(name, color) => handleCreateLabel(name, color)}
+            onDeleteLabel={(labelId) => handleDeleteLabel(labelId, setDocuments)}
+            onEditLabel={(labelId, name, color) => handleEditLabel(labelId, name, color)}
           />
 
           {/* Documents Grid */}
@@ -514,7 +401,7 @@ function AppContent() {
                         <DocumentLabelSelector
                           document={doc}
                           labels={labels}
-                          onLabelChange={handleUpdateDocumentLabel}
+                          onLabelChange={(documentId, labelId) => handleUpdateDocumentLabel(documentId, labelId, updateDocumentLabel)}
                           getLabelColor={getLabelColor}
                           onDropdownToggle={handleDropdownToggle}
                         />
@@ -696,7 +583,7 @@ function AppContent() {
                 </button>
 
                 <button
-                  onClick={downloadPDF}
+                  onClick={handleDownloadPDF}
                   className="flex items-center gap-2 bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition-colors"
                 >
                   <Download size={16} />
@@ -831,7 +718,7 @@ function AppContent() {
                   </button>
                   
                   <button
-                    onClick={downloadPDF}
+                    onClick={handleDownloadPDF}
                     className="w-full flex items-center gap-3 px-4 py-2 bg-green-50 hover:bg-green-100 border border-green-200 rounded-lg transition-all text-left"
                   >
                     <Download className="h-4 w-4 text-green-600" />

@@ -363,15 +363,32 @@ async def create_document(request: CreateDocumentRequest, current_user: dict = D
     print(f"   User ID: {current_user['id']}")
     
     try:
+        # Handle label assignment - use provided label or default to "Master Resume"
+        label_to_use = request.label
+        
+        if not label_to_use:
+            print(f"🏷️ No label provided, looking for default 'Master Resume' label")
+            # Find the "Master Resume" label for this user
+            master_resume_label = labels_collection.find_one({
+                "name": "Master Resume",
+                "user_id": current_user["id"]
+            })
+            
+            if master_resume_label:
+                label_to_use = master_resume_label["id"]
+                print(f"✅ Found Master Resume label: {label_to_use}")
+            else:
+                print(f"⚠️ No Master Resume label found, creating document without label")
+        
         # Validate label if provided
-        if request.label:
-            print(f"🔍 Validating label: {request.label}")
+        if label_to_use:
+            print(f"🔍 Validating label: {label_to_use}")
             label = labels_collection.find_one({
-                "id": request.label,
+                "id": label_to_use,
                 "user_id": current_user["id"]
             })
             if not label:
-                print(f"❌ Invalid label: {request.label}")
+                print(f"❌ Invalid label: {label_to_use}")
                 raise HTTPException(status_code=400, detail="Invalid label")
             print(f"✅ Label validated: {label}")
         
@@ -382,7 +399,7 @@ async def create_document(request: CreateDocumentRequest, current_user: dict = D
             "id": str(uuid.uuid4()),
             "title": request.title,
             "sections": [section.dict() if hasattr(section, 'dict') else section for section in sections],
-            "label": request.label,
+            "label": label_to_use,
             "user_id": current_user["id"],
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow()

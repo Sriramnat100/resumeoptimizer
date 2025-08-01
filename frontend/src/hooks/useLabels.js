@@ -11,6 +11,29 @@ export const useLabels = () => {
 
   console.log('🏷️ [HOOK] useLabels hook initialized');
 
+  // Create default "Master Resume" label if no labels exist
+  const createDefaultLabel = async () => {
+    console.log('🏷️ [DEFAULT] Checking if default label needs to be created...');
+    
+    if (labels.length === 0) {
+      console.log('🏷️ [DEFAULT] No labels found, creating default "Master Resume" label');
+      
+      try {
+        const defaultLabel = await createLabelInBackend('Master Resume', 'blue');
+        console.log('✅ [DEFAULT] Default label created:', defaultLabel);
+        setLabels([defaultLabel]);
+        setSelectedLabel(defaultLabel.id);
+        console.log('✅ [DEFAULT] Default label set as selected');
+        return defaultLabel;
+      } catch (error) {
+        console.error('❌ [DEFAULT] Failed to create default label:', error);
+        // Don't throw error here, just log it
+      }
+    } else {
+      console.log('🏷️ [DEFAULT] Labels already exist, no default needed');
+    }
+  };
+
 
   // Fetch labels from backend
   const fetchLabels = async () => {
@@ -58,6 +81,12 @@ export const useLabels = () => {
         console.log('✅ [FETCH] About to call setLabels with array:', response.data);
         setLabels(response.data);
         console.log('✅ [FETCH] setLabels called successfully');
+        
+        // If no labels exist, create the default "Master Resume" label
+        if (response.data.length === 0) {
+          console.log('🏷️ [FETCH] No labels found, creating default label');
+          await createDefaultLabel();
+        }
       } else {
         console.error('❌ [FETCH] Response data is not an array:', response.data);
         setError('Invalid response format from server');
@@ -321,6 +350,71 @@ export const useLabels = () => {
     );
   };
 
+  // Handler functions for UI interactions
+  const handleDeleteLabel = async (labelId, setDocuments) => {
+    console.log('🗑️ [HANDLER] handleDeleteLabel called with labelId:', labelId);
+    try {
+      await deleteLabel(labelId);
+      // Remove label from documents that use it
+      removeLabelFromDocuments(labelId, setDocuments);
+      console.log('✅ [HANDLER] Label deleted and removed from documents');
+    } catch (error) {
+      console.error('❌ [HANDLER] Failed to delete label:', error);
+      throw error;
+    }
+  };
+
+  const handleCreateLabel = async (name, color) => {
+    console.log('🔥 [HANDLER] handleCreateLabel called with:', { name, color });
+    try {
+      const result = await createCustomLabel(name, color);
+      console.log('✅ [HANDLER] Label created successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [HANDLER] Failed to create label:', error);
+      throw error;
+    }
+  };
+
+  const handleEditLabel = async (labelId, name, color) => {
+    console.log('✏️ [HANDLER] handleEditLabel called with:', { labelId, name, color });
+    try {
+      const result = await editLabel(labelId, name, color);
+      console.log('✅ [HANDLER] Label edited successfully:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ [HANDLER] Failed to edit label:', error);
+      throw error;
+    }
+  };
+
+  const handleAddLabelToDocument = (documentId, labelId, setDocuments) => {
+    console.log('📄 [HANDLER] handleAddLabelToDocument called with:', { documentId, labelId });
+    addLabelToDocument(documentId, labelId, setDocuments);
+    console.log('✅ [HANDLER] Label added to document');
+  };
+
+  const handleUpdateDocumentLabel = async (documentId, labelId, updateDocumentLabel) => {
+    console.log('🎯 [HANDLER] handleUpdateDocumentLabel called');
+    console.log('🎯 [HANDLER] Document ID:', documentId);
+    console.log('🎯 [HANDLER] Label ID:', labelId);
+    console.log('🎯 [HANDLER] Label ID is null:', labelId === null);
+    console.log('🎯 [HANDLER] updateDocumentLabel function exists:', typeof updateDocumentLabel);
+    
+    try {
+      console.log('🎯 [HANDLER] Calling updateDocumentLabel...');
+      const updated = await updateDocumentLabel(documentId, labelId);
+      console.log('✅ [HANDLER] updateDocumentLabel completed successfully');
+      console.log('✅ [HANDLER] Updated document:', updated);
+
+      return updated;
+    } catch (error) {
+      console.error("❌ [HANDLER] Failed to update document label:", error);
+      console.error("❌ [HANDLER] Error details:", error.response?.data || error.message);
+      throw error;
+    }
+  };
+
   // Log state changes
   useEffect(() => {
     console.log('🏷️ [STATE] Labels state changed:', labels);
@@ -351,6 +445,7 @@ export const useLabels = () => {
     deleteLabel,
     editLabel,
     setSelectedLabel,
+    createDefaultLabel,
     
     // Utilities
     getLabelColor,
@@ -358,6 +453,13 @@ export const useLabels = () => {
     getFilteredDocuments,
     addLabelToDocument,
     removeLabelFromDocuments,
+    
+    // UI Handlers
+    handleDeleteLabel,
+    handleCreateLabel,
+    handleEditLabel,
+    handleAddLabelToDocument,
+    handleUpdateDocumentLabel,
     
     // State setters (for external use)
     setLabels
