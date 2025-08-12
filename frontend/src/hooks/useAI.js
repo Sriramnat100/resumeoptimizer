@@ -138,6 +138,11 @@ export const useAI = (currentDocument, onEditApply, onEditReject) => {
     setInput(suggestion);
   };
 
+  // Expose helpers that now proxy to backend if needed
+  const analyzeSection = async (sectionContent, userQuestion) => {
+    return aiService.analyzeSection(sectionContent, userQuestion, currentDocument);
+  };
+
   return {
     messages,
     input,
@@ -147,7 +152,8 @@ export const useAI = (currentDocument, onEditApply, onEditReject) => {
     sendMessage,
     handleEditAction,
     handleSuggestionClick,
-    getResumeContext: () => aiService.getResumeContext(currentDocument)
+    getResumeContext: () => aiService.getResumeContext(currentDocument),
+    analyzeSection,
   };
 };
 

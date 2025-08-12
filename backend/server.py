@@ -15,6 +15,12 @@ import bcrypt
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 
+# AI service import
+try:
+    from .ai_service import ResumeAIService
+except Exception:
+    from ai_service import ResumeAIService
+
 app = FastAPI(title="Google Docs 2.0 - Resume Builder")
 
 # JWT Configuration
@@ -38,6 +44,14 @@ app.add_middleware(
 )
 
 load_dotenv()
+# Also load .env from this backend directory explicitly (helps when CWD is project root)
+try:
+    from pathlib import Path
+    backend_env = Path(__file__).resolve().parent / ".env"
+    if backend_env.exists():
+        load_dotenv(backend_env)
+except Exception:
+    pass
 
 # MongoDB connection
 MONGO_URL = os.getenv("MONGO_URL")
@@ -74,6 +88,14 @@ try:
     print("✅ Labels collection created/verified")
 except Exception as e:
     print(f"ℹ️ Labels collection already exists: {e}")
+
+# ===================== AI SERVICE INIT =====================
+ai_service_instance = None
+try:
+    ai_service_instance = ResumeAIService()
+    print("🤖 AI service initialized")
+except Exception as e:
+    print(f"❌ Failed to initialize AI service: {e}")
 
 # Authentication helper functions
 def verify_password(plain_password, hashed_password):
@@ -193,6 +215,22 @@ class UpdateLabelRequest(BaseModel):
     name: Optional[str] = None
     color: Optional[str] = None
 
+# ===== AI API MODELS =====
+class AIChatRequest(BaseModel):
+    message: str
+    resume_data: Optional[Dict[str, Any]] = None
+
+
+class AISectionRequest(BaseModel):
+    section_content: str
+    user_question: str
+    resume_data: Optional[Dict[str, Any]] = None
+
+
+class AIAtsRequest(BaseModel):
+    resume_data: Dict[str, Any]
+    job_description: Optional[str] = None
+
 # Helper function to convert ObjectId to string
 def serialize_doc(doc):
     if doc is None:
@@ -257,6 +295,43 @@ def get_default_sections():
 @app.get("/")
 async def root():
     return {"message": "Google Docs 2.0 - Resume Builder API"}
+
+# ===================== AI ENDPOINTS =====================
+@app.get("/api/ai/status")
+async def get_ai_status():
+    if not ai_service_instance:
+        return {"available": False, "has_api_key": False, "model": "None", "current_job_description": False}
+    return ai_service_instance.get_service_status()
+
+
+@app.post("/api/ai/chat")
+async def ai_chat(request: AIChatRequest, current_user: dict = Depends(get_current_user)):
+    if not ai_service_instance:
+        raise HTTPException(status_code=503, detail="AI service unavailable")
+    try:
+        return ai_service_instance.chat_with_ai(request.message, request.resume_data, user_id=current_user.get("id"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/ai/section")
+async def ai_section(request: AISectionRequest, current_user: dict = Depends(get_current_user)):
+    if not ai_service_instance:
+        raise HTTPException(status_code=503, detail="AI service unavailable")
+    try:
+        return ai_service_instance.analyze_resume_section(request.section_content, request.user_question, request.resume_data, user_id=current_user.get("id"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/ai/ats")
+async def ai_ats(request: AIAtsRequest, current_user: dict = Depends(get_current_user)):
+    if not ai_service_instance:
+        raise HTTPException(status_code=503, detail="AI service unavailable")
+    try:
+        return ai_service_instance.generate_ats_advice(request.resume_data, request.job_description, user_id=current_user.get("id"))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/auth/register", response_model=Token)
 async def register(user_data: UserCreate):
